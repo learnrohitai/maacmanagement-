@@ -14,7 +14,8 @@ export default function Header() {
     'teacher': 'Teacher',
     'student': 'Student',
     'academic-manager': 'Academic Manager',
-    'account-manager': 'Account Manager'
+    'account-manager': 'Account Manager',
+    'counselor': 'Admission Counselor'
   };
 
   return (

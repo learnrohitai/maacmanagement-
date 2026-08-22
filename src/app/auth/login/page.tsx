@@ -6,12 +6,13 @@ import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import { Mail, Lock, ArrowRight, Sparkles, Users, BookOpen, CreditCard, Shield } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Sparkles, Users, BookOpen, CreditCard, Shield, UserCheck } from 'lucide-react';
 
 const roleQuickLogin = [
   { role: 'admin', label: 'Admin', email: 'admin@maac.com', icon: <Shield className="w-5 h-5" />, color: 'from-purple-500 to-indigo-600' },
   { role: 'teacher', label: 'Teacher', email: 'rahul@maac.com', icon: <BookOpen className="w-5 h-5" />, color: 'from-cyan-500 to-blue-600' },
   { role: 'academic-manager', label: 'Academic', email: 'academic@maac.com', icon: <Users className="w-5 h-5" />, color: 'from-orange-500 to-amber-600' },
+  { role: 'counselor', label: 'Counselor', email: 'counselor@maac.com', icon: <UserCheck className="w-5 h-5" />, color: 'from-emerald-500 to-teal-600' },
 ];
 
 const bgBubbles = [
@@ -186,7 +187,7 @@ export default function LoginPage() {
             className="mb-8"
           >
             <p className="text-sm font-medium text-gray-600 mb-4 text-center">Quick Login as Role</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {roleQuickLogin.map((role) => (
                 <motion.button
                   key={role.role}

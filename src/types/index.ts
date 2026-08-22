@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'teacher' | 'student' | 'academic-manager' | 'account-manager';
+export type UserRole = 'admin' | 'teacher' | 'student' | 'academic-manager' | 'account-manager' | 'counselor';
 
 export interface User {
   id: string;
@@ -10,6 +10,23 @@ export interface User {
   joinDate: string;
   isActive: boolean;
 }
+
+export interface InquiryLead {
+  id: string;
+  studentName: string;
+  phone: string;
+  email: string;
+  interestedCourse: string;
+  source: 'Website' | 'Walk-in' | 'Social Media' | 'Referral' | 'Phone Call';
+  status: 'new' | 'contacted' | 'counseling-scheduled' | 'demo-booked' | 'enrolled' | 'lost';
+  counselorName: string;
+  counselorId: string;
+  notes: string;
+  followUpDate: string;
+  createdAt: string;
+  budget?: number;
+}
+
 
 export interface Batch {
   id: string;

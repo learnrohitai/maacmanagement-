@@ -1,4 +1,4 @@
-import { User, Batch, Attendance, LessonPlan, StudentProgress, FeeRecord, DashboardStats } from '@/types';
+import { User, Batch, Attendance, LessonPlan, StudentProgress, FeeRecord, DashboardStats, InquiryLead } from '@/types';
 
 export const mockUsers: User[] = [
   {
@@ -69,6 +69,16 @@ export const mockUsers: User[] = [
     avatar: '/avatars/account.jpg',
     phone: '+91 9876543216',
     joinDate: '2024-01-20',
+    isActive: true
+  },
+  {
+    id: '8',
+    name: 'Priya Sharma',
+    email: 'counselor@maac.com',
+    role: 'counselor',
+    avatar: '/avatars/counselor.jpg',
+    phone: '+91 9876543217',
+    joinDate: '2024-02-01',
     isActive: true
   }
 ];
@@ -415,3 +425,97 @@ export const weekDays = [
   'Friday',
   'Saturday'
 ];
+
+export const mockInquiries: InquiryLead[] = [
+  {
+    id: 'inq-1',
+    studentName: 'Rohan Deshmukh',
+    phone: '+91 98112 34567',
+    email: 'rohan.d@gmail.com',
+    interestedCourse: 'Animation',
+    source: 'Website',
+    status: 'counseling-scheduled',
+    counselorName: 'Priya Sharma',
+    counselorId: '8',
+    notes: 'Interested in 3D Character Animation. Scheduled campus visit for counseling demo.',
+    followUpDate: '2026-08-23',
+    createdAt: '2026-08-20',
+    budget: 85000
+  },
+  {
+    id: 'inq-2',
+    studentName: 'Ananya Verma',
+    phone: '+91 98223 45678',
+    email: 'ananya.v@yahoo.com',
+    interestedCourse: 'VFX',
+    source: 'Walk-in',
+    status: 'demo-booked',
+    counselorName: 'Priya Sharma',
+    counselorId: '8',
+    notes: 'Completed 12th standard, passionate about Hollywood VFX pipelines. Demo booked for tomorrow.',
+    followUpDate: '2026-08-24',
+    createdAt: '2026-08-19',
+    budget: 120000
+  },
+  {
+    id: 'inq-3',
+    studentName: 'Varun Joshi',
+    phone: '+91 98334 56789',
+    email: 'varun.j@gmail.com',
+    interestedCourse: 'Game Design',
+    source: 'Social Media',
+    status: 'new',
+    counselorName: 'Priya Sharma',
+    counselorId: '8',
+    notes: 'Enquired via Instagram ad about Unity & Unreal Engine courses. Needs intro call.',
+    followUpDate: '2026-08-23',
+    createdAt: '2026-08-22',
+    budget: 95000
+  },
+  {
+    id: 'inq-4',
+    studentName: 'Tanvi Saxena',
+    phone: '+91 98445 67890',
+    email: 'tanvi.s@gmail.com',
+    interestedCourse: 'Graphic Design',
+    source: 'Referral',
+    status: 'enrolled',
+    counselorName: 'Priya Sharma',
+    counselorId: '8',
+    notes: 'Enrolled in Batch 3 Graphic Design masterclass. Advance token fee paid.',
+    followUpDate: '2026-08-21',
+    createdAt: '2026-08-15',
+    budget: 65000
+  },
+  {
+    id: 'inq-5',
+    studentName: 'Aditya Mehta',
+    phone: '+91 98556 78901',
+    email: 'aditya.m@outlook.com',
+    interestedCourse: 'Motion Graphics',
+    source: 'Phone Call',
+    status: 'contacted',
+    counselorName: 'Priya Sharma',
+    counselorId: '8',
+    notes: 'Working professional looking for weekend batch for After Effects and Cinema 4D.',
+    followUpDate: '2026-08-25',
+    createdAt: '2026-08-18',
+    budget: 70000
+  },
+  {
+    id: 'inq-6',
+    studentName: 'Kavya Nair',
+    phone: '+91 98667 89012',
+    email: 'kavya.nair@gmail.com',
+    interestedCourse: 'Animation',
+    source: 'Walk-in',
+    status: 'enrolled',
+    counselorName: 'Priya Sharma',
+    counselorId: '8',
+    notes: 'Enrolled into 3D Animation Foundation course.',
+    followUpDate: '2026-08-20',
+    createdAt: '2026-08-10',
+    budget: 90000
+  }
+];
+
