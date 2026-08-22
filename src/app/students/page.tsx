@@ -22,17 +22,28 @@ import {
   AlertCircle,
   FileText,
   User,
-  CreditCard
+  CreditCard,
+  RefreshCw,
+  ArrowRight,
+  ArrowLeftRight
 } from 'lucide-react';
 import { StudentStatus, User as UserType } from '@/types';
 
 export default function StudentsPage() {
-  const { students, batches, deleteStudent } = useStore();
+  const { students, batches, deleteStudent, changeStudentBatch, currentUser } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [courseFilter, setCourseFilter] = useState<string>('all');
   const [isAdmissionModalOpen, setIsAdmissionModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<UserType | null>(null);
+
+  // Batch Transfer Modal State
+  const [studentForTransfer, setStudentForTransfer] = useState<{
+    student: UserType;
+    currentBatchId: string;
+  } | null>(null);
+  const [transferTargetBatchId, setTransferTargetBatchId] = useState<string>('');
+  const [transferReason, setTransferReason] = useState<string>('Timing & Schedule Shift Request');
 
   const filteredStudents = students.filter(student => {
     const matchesSearch =
@@ -59,15 +70,32 @@ export default function StudentsPage() {
       case 'Passout/Certificate':
         return <Badge variant="info">📜 Certificate Issued</Badge>;
       case 'Dropped (ADO/FDO)':
-        return <Badge variant="danger">❌ Dropped (ADO/FDO)</Badge>;
+        return <Badge variant="danger">❌ Dropped</Badge>;
       default:
         return <Badge variant="default">Active</Badge>;
     }
   };
 
-  const waitingCount = students.filter(s => s.studentStatus === 'Waiting for Batch').length;
   const activeCount = students.filter(s => s.studentStatus === 'Active').length;
+  const waitingCount = students.filter(s => s.studentStatus === 'Waiting for Batch').length;
   const completedCount = students.filter(s => s.studentStatus === 'Course Completed' || s.studentStatus === 'Passout/Certificate').length;
+
+  const handleExecuteTransfer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (studentForTransfer && transferTargetBatchId) {
+      changeStudentBatch(
+        studentForTransfer.student.id,
+        studentForTransfer.currentBatchId,
+        transferTargetBatchId,
+        transferReason
+      );
+      setStudentForTransfer(null);
+      setTransferTargetBatchId('');
+      if (selectedStudent && selectedStudent.id === studentForTransfer.student.id) {
+        setSelectedStudent(null);
+      }
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -75,7 +103,7 @@ export default function StudentsPage() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col md:flex-row md:items-center justify-between gap-4"
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Student Master Database</h1>
@@ -83,7 +111,7 @@ export default function StudentsPage() {
         </div>
         <Button
           onClick={() => setIsAdmissionModalOpen(true)}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20"
+          className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 font-bold"
         >
           <GraduationCap className="w-5 h-5 mr-2" />
           Create Admission
@@ -127,7 +155,7 @@ export default function StudentsPage() {
               placeholder="Search by student name, ID, phone, email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900"
             />
           </div>
 
@@ -138,40 +166,40 @@ export default function StudentsPage() {
           >
             <option value="all">All Student Statuses</option>
             <option value="Waiting for Batch">⏳ Waiting for Batch</option>
-            <option value="Active">✅ Active (In Class)</option>
+            <option value="Active">✅ Active</option>
             <option value="On Hold/Pause">⏸️ On Hold / Pause</option>
             <option value="Course Completed">🎓 Course Completed</option>
             <option value="Passout/Certificate">📜 Passout / Certificate</option>
-            <option value="Dropped (ADO/FDO)">❌ Dropped (ADO / FDO)</option>
+            <option value="Dropped (ADO/FDO)">❌ Dropped (ADO/FDO)</option>
           </select>
 
           <select
             value={courseFilter}
             onChange={(e) => setCourseFilter(e.target.value)}
-            className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
           >
-            <option value="all">All Courses</option>
-            <option value="Animation">3D Animation</option>
+            <option value="all">All Course Programs</option>
+            <option value="Animation">3D Animation Film Making</option>
             <option value="VFX">VFX & Compositing</option>
-            <option value="Game Design">Game Design</option>
-            <option value="Graphic Design">Graphic Design</option>
+            <option value="Game Design">Game Art & Design</option>
+            <option value="Graphic Design">Graphic Design & UI/UX</option>
             <option value="Motion Graphics">Motion Graphics</option>
           </select>
         </div>
       </Card>
 
-      {/* Student Master Table */}
+      {/* Main Student Master Database Table */}
       <Card className="p-6">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 text-gray-600 border-b border-gray-100">
+            <thead className="bg-gray-50 text-gray-600 border-b border-gray-100 text-xs uppercase">
               <tr>
                 <th className="py-3 px-4 font-semibold">Student ID & Name</th>
                 <th className="py-3 px-4 font-semibold">Course & Admission Date</th>
-                <th className="py-3 px-4 font-semibold">Parent Contact</th>
+                <th className="py-3 px-4 font-semibold">Parent & Contact</th>
                 <th className="py-3 px-4 font-semibold">Status</th>
                 <th className="py-3 px-4 font-semibold">Assigned Batch</th>
-                <th className="py-3 px-4 font-semibold">Fee / Payment</th>
+                <th className="py-3 px-4 font-semibold">Fee Status</th>
                 <th className="py-3 px-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
@@ -179,31 +207,27 @@ export default function StudentsPage() {
               {filteredStudents.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="text-center py-12 text-gray-500">
-                    No students found matching your criteria.
+                    No student records found matching the filter criteria.
                   </td>
                 </tr>
               ) : (
                 filteredStudents.map((student) => {
+                  const assignedBatchIds = student.assignedBatches || [];
                   const assignedBatchNames = batches
-                    .filter(b => student.assignedBatches?.includes(b.id))
+                    .filter(b => assignedBatchIds.includes(b.id) || b.studentIds.includes(student.id))
                     .map(b => b.name);
+
+                  const firstBatch = batches.find(b => assignedBatchIds.includes(b.id) || b.studentIds.includes(student.id));
 
                   return (
                     <tr key={student.id} className="hover:bg-gray-50/60 transition-colors">
                       <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-emerald-400 flex items-center justify-center text-white font-bold text-xs shrink-0 shadow-sm">
-                            {student.name.charAt(0)}
-                          </div>
-                          <div>
-                            <div className="font-bold text-gray-900">{student.name}</div>
-                            <div className="text-xs text-emerald-700 font-mono font-medium">{student.studentId || 'MAAC-STU'}</div>
-                            <div className="text-xs text-gray-400">{student.phone}</div>
-                          </div>
-                        </div>
+                        <div className="font-bold text-gray-900">{student.name}</div>
+                        <div className="text-xs font-mono text-emerald-700 font-bold">{student.studentId || 'MAAC-STU'}</div>
+                        <div className="text-xs text-gray-400">{student.phone}</div>
                       </td>
                       <td className="py-3.5 px-4">
-                        <div className="font-medium text-gray-800">{student.course || 'Animation'}</div>
+                        <div className="font-medium text-gray-900">{student.course || 'Animation'}</div>
                         <div className="text-xs text-gray-500">Admitted: {student.admissionDate || student.joinDate}</div>
                         <div className="text-xs text-gray-400">Counselor: {student.counselorName || 'Priya Sharma'}</div>
                       </td>
@@ -216,12 +240,17 @@ export default function StudentsPage() {
                       </td>
                       <td className="py-3.5 px-4">
                         {assignedBatchNames.length > 0 ? (
-                          <div className="text-xs font-medium text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg inline-block">
-                            {assignedBatchNames.join(', ')}
+                          <div>
+                            <div className="text-xs font-semibold text-purple-800 bg-purple-50 px-2.5 py-1 rounded-lg inline-block">
+                              {assignedBatchNames.join(', ')}
+                            </div>
+                            {firstBatch && (
+                              <div className="text-[10px] text-gray-500 mt-0.5">{firstBatch.startTime}-{firstBatch.endTime} • {firstBatch.room}</div>
+                            )}
                           </div>
                         ) : (
                           <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md font-medium">
-                            Unassigned
+                            Unassigned (Waiting)
                           </span>
                         )}
                       </td>
@@ -239,23 +268,41 @@ export default function StudentsPage() {
                           {student.paymentStatus || 'Pending'}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-right space-x-1.5">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setSelectedStudent(student)}
-                          className="text-xs px-2 py-1 text-gray-600 hover:text-emerald-700"
-                        >
-                          <Eye className="w-3.5 h-3.5 mr-1" />
-                          View
-                        </Button>
-                        <button
-                          onClick={() => deleteStudent(student.id)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
-                          title="Delete Student"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setStudentForTransfer({
+                                student,
+                                currentBatchId: firstBatch?.id || ''
+                              });
+                              const altBatch = batches.find(b => b.id !== firstBatch?.id && b.course === student.course) || batches[0];
+                              setTransferTargetBatchId(altBatch?.id || '');
+                            }}
+                            className="text-xs px-2.5 py-1 text-orange-700 hover:bg-orange-50 font-semibold"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                            Transfer
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setSelectedStudent(student)}
+                            className="text-xs px-2 py-1 text-gray-600 hover:text-emerald-700"
+                          >
+                            <Eye className="w-3.5 h-3.5 mr-1" />
+                            View
+                          </Button>
+                          <button
+                            onClick={() => deleteStudent(student.id)}
+                            className="p-1.5 text-gray-400 hover:text-red-600 transition-colors"
+                            title="Delete Student"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -284,8 +331,27 @@ export default function StudentsPage() {
               <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-emerald-500 flex items-center justify-center text-white text-xl font-bold">
                 {selectedStudent.name.charAt(0)}
               </div>
-              <div>
-                <h3 className="font-bold text-gray-900 text-lg">{selectedStudent.name}</h3>
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-gray-900 text-lg">{selectedStudent.name}</h3>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const curB = batches.find(b => selectedStudent.assignedBatches?.includes(b.id) || b.studentIds.includes(selectedStudent.id));
+                      setStudentForTransfer({
+                        student: selectedStudent,
+                        currentBatchId: curB?.id || ''
+                      });
+                      const altBatch = batches.find(b => b.id !== curB?.id && b.course === selectedStudent.course) || batches[0];
+                      setTransferTargetBatchId(altBatch?.id || '');
+                    }}
+                    className="text-xs px-2.5 py-1 text-orange-700 border-orange-200 hover:bg-orange-50 font-semibold"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                    Change Batch
+                  </Button>
+                </div>
                 <p className="text-xs font-mono text-emerald-800 font-bold">{selectedStudent.studentId || 'MAAC-STUDENT'}</p>
                 <p className="text-xs text-gray-600">{selectedStudent.course} • Admitted: {selectedStudent.admissionDate || selectedStudent.joinDate}</p>
               </div>
@@ -301,14 +367,6 @@ export default function StudentsPage() {
                 <p className="font-bold text-gray-900 mt-1">₹{selectedStudent.feesPaid?.toLocaleString()} / ₹{selectedStudent.totalFees?.toLocaleString()} ({selectedStudent.paymentStatus})</p>
               </div>
               <div>
-                <p className="text-gray-400 font-medium">Date of Birth (D.O.B.)</p>
-                <p className="font-semibold text-gray-800">{selectedStudent.dob || 'N/A'}</p>
-              </div>
-              <div>
-                <p className="text-gray-400 font-medium">Contact Phone & Email</p>
-                <p className="font-semibold text-gray-800">{selectedStudent.phone} • {selectedStudent.email}</p>
-              </div>
-              <div>
                 <p className="text-gray-400 font-medium">Parent / Guardian</p>
                 <p className="font-semibold text-gray-800">{selectedStudent.parentName || 'N/A'}</p>
               </div>
@@ -317,12 +375,14 @@ export default function StudentsPage() {
                 <p className="font-semibold text-gray-800">{selectedStudent.parentContact || selectedStudent.phone}</p>
               </div>
               <div>
-                <p className="text-gray-400 font-medium">Counselor In-charge</p>
-                <p className="font-semibold text-gray-800">{selectedStudent.counselorName || 'Priya Sharma'}</p>
+                <p className="text-gray-400 font-medium">Assigned Batch</p>
+                <p className="font-semibold text-purple-700">
+                  {batches.filter(b => selectedStudent.assignedBatches?.includes(b.id) || b.studentIds.includes(selectedStudent.id)).map(b => b.name).join(', ') || 'Waiting for Batch'}
+                </p>
               </div>
               <div>
-                <p className="text-gray-400 font-medium">Next Fees Due Date</p>
-                <p className="font-semibold text-gray-800">{selectedStudent.feesDueDate || 'N/A'}</p>
+                <p className="text-gray-400 font-medium">Counselor In-charge</p>
+                <p className="font-semibold text-gray-800">{selectedStudent.counselorName || 'Priya Sharma'}</p>
               </div>
             </div>
 
@@ -338,7 +398,7 @@ export default function StudentsPage() {
             </div>
 
             <div>
-              <p className="text-xs font-bold text-gray-600 mb-1.5 uppercase">Remarks & Notes</p>
+              <p className="text-xs font-bold text-gray-600 mb-1.5 uppercase">Audit Remarks & Transfer Log</p>
               <p className="text-xs text-gray-700 bg-gray-50 p-3 rounded-xl italic">
                 &ldquo;{selectedStudent.remarks || 'Standard enrollment.'}&rdquo;
               </p>
@@ -348,6 +408,117 @@ export default function StudentsPage() {
               <Button variant="outline" onClick={() => setSelectedStudent(null)}>Close</Button>
             </div>
           </div>
+        </Modal>
+      )}
+
+      {/* Change / Transfer Batch Modal */}
+      {studentForTransfer && (
+        <Modal
+          isOpen={!!studentForTransfer}
+          onClose={() => setStudentForTransfer(null)}
+          title={`Transfer / Change Batch: ${studentForTransfer.student.name}`}
+          size="lg"
+        >
+          {(() => {
+            const currentBatch = batches.find(b => b.id === studentForTransfer.currentBatchId || b.studentIds.includes(studentForTransfer.student.id));
+            const targetBatch = batches.find(b => b.id === transferTargetBatchId);
+
+            return (
+              <form onSubmit={handleExecuteTransfer} className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 text-xs">
+                  <div>
+                    <span className="text-gray-400 block">Candidate</span>
+                    <strong className="text-gray-900 text-sm">{studentForTransfer.student.name}</strong>
+                    <p className="text-emerald-700 font-mono font-medium">{studentForTransfer.student.studentId}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block">Current Batch</span>
+                    <strong className="text-purple-900">{currentBatch ? currentBatch.name : 'Unassigned'}</strong>
+                    <p className="text-gray-600">{currentBatch ? `${currentBatch.startTime}-${currentBatch.endTime} • ${currentBatch.room}` : ''}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+                    Select New Target Batch *
+                  </label>
+                  <select
+                    value={transferTargetBatchId}
+                    onChange={(e) => setTransferTargetBatchId(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm text-gray-900 font-medium"
+                    required
+                  >
+                    <option value="">-- Choose New Batch --</option>
+                    {batches
+                      .filter(b => b.id !== currentBatch?.id)
+                      .map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.batchIdCode || b.id} - {b.name} ({b.startTime} - {b.endTime} | {b.room} | Faculty: {b.teacherName} | Seats: {b.enrolledStudents}/{b.capacity})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+                    Reason for Batch Transfer *
+                  </label>
+                  <select
+                    value={transferReason}
+                    onChange={(e) => setTransferReason(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm text-gray-900"
+                    required
+                  >
+                    <option value="Timing & Schedule Shift Request">Timing & Schedule Shift Request</option>
+                    <option value="Module Advancement / Level Upgrade">Module Advancement / Level Upgrade</option>
+                    <option value="Faculty / Teaching Preference">Faculty / Teaching Preference</option>
+                    <option value="Lab / Software Suite Relocation">Lab / Software Suite Relocation</option>
+                    <option value="Personal Request by Student / Guardian">Personal Request by Student / Guardian</option>
+                    <option value="Practice / Doubt Class Realignment">Practice / Doubt Class Realignment</option>
+                  </select>
+                </div>
+
+                {targetBatch && (
+                  <div className="p-3.5 bg-orange-50/70 border border-orange-200 rounded-xl text-xs space-y-1.5">
+                    <p className="font-bold text-orange-950 flex items-center gap-1.5">
+                      <ArrowRight className="w-4 h-4 text-orange-600" />
+                      Transfer Summary:
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-gray-700">
+                      <div>
+                        <span className="text-gray-400">From: </span>
+                        <strong>{currentBatch?.name || 'Unassigned'}</strong>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">To: </span>
+                        <strong className="text-emerald-800">{targetBatch.name}</strong>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">New Schedule: </span>
+                        <span>{targetBatch.startTime} - {targetBatch.endTime}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">New Lab: </span>
+                        <span>{targetBatch.room}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button type="button" variant="outline" onClick={() => setStudentForTransfer(null)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5"
+                  >
+                    Confirm Batch Transfer
+                  </Button>
+                </div>
+              </form>
+            );
+          })()}
         </Modal>
       )}
     </div>

@@ -20,18 +20,28 @@ import {
   Eye,
   MapPin,
   Sparkles,
-  HelpCircle
+  HelpCircle,
+  RefreshCw,
+  ArrowRight
 } from 'lucide-react';
 import { courseOptions, weekDays } from '@/lib/mockData';
-import { Batch } from '@/types';
+import { Batch, User as UserType } from '@/types';
 
 export default function BatchesPage() {
-  const { batches, addBatch, updateBatch, deleteBatch, users, currentUser } = useStore();
+  const { batches, addBatch, updateBatch, deleteBatch, users, currentUser, changeStudentBatch } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [viewingBatch, setViewingBatch] = useState<Batch | null>(null);
+
+  // Transfer Modal State
+  const [studentForTransfer, setStudentForTransfer] = useState<{
+    student: UserType;
+    currentBatchId: string;
+  } | null>(null);
+  const [transferTargetBatchId, setTransferTargetBatchId] = useState<string>('');
+  const [transferReason, setTransferReason] = useState<string>('Timing & Schedule Shift Request');
 
   if (currentUser?.role === 'counselor') {
     return (
@@ -148,6 +158,20 @@ export default function BatchesPage() {
     }));
   };
 
+  const handleExecuteTransfer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (studentForTransfer && transferTargetBatchId) {
+      changeStudentBatch(
+        studentForTransfer.student.id,
+        studentForTransfer.currentBatchId,
+        transferTargetBatchId,
+        transferReason
+      );
+      setStudentForTransfer(null);
+      setTransferTargetBatchId('');
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -158,7 +182,7 @@ export default function BatchesPage() {
       >
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Batch Management & Scheduling</h1>
-          <p className="text-gray-500 mt-1">Configure class batches, schedules, rooms, and practice / doubt classes</p>
+          <p className="text-gray-500 mt-1">Configure class batches, transfer students, assign lab rooms, and schedule practice classes</p>
         </div>
         <Button onClick={() => { resetForm(); setIsModalOpen(true); }}>
           <Plus className="w-5 h-5 mr-2" />
@@ -290,11 +314,11 @@ export default function BatchesPage() {
         </AnimatePresence>
       </div>
 
-      {/* View Enrolled Students Modal */}
+      {/* View Enrolled Students & 1-Click Transfer Modal */}
       <Modal
         isOpen={!!viewingBatch}
         onClose={() => setViewingBatch(null)}
-        title={viewingBatch ? `Students in ${viewingBatch.name}` : 'Students'}
+        title={viewingBatch ? `Enrolled Students in ${viewingBatch.name} (${viewingBatch.enrolledStudents})` : 'Students'}
         size="lg"
       >
         {viewingBatch && (() => {
@@ -315,6 +339,7 @@ export default function BatchesPage() {
                         <th className="py-2.5 px-3">Student ID</th>
                         <th className="py-2.5 px-3">Phone</th>
                         <th className="py-2.5 px-3">Status</th>
+                        <th className="py-2.5 px-3 text-right">Transfer Batch</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -324,7 +349,25 @@ export default function BatchesPage() {
                           <td className="py-2 px-3 text-xs font-mono text-emerald-700">{s.studentId || 'MAAC-STU'}</td>
                           <td className="py-2 px-3 text-xs text-gray-600">{s.phone}</td>
                           <td className="py-2 px-3">
-                            <Badge variant="success">Active in Class</Badge>
+                            <Badge variant="success">Active</Badge>
+                          </td>
+                          <td className="py-2 px-3 text-right">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setStudentForTransfer({
+                                  student: s,
+                                  currentBatchId: viewingBatch.id
+                                });
+                                const altBatch = batches.find(b => b.id !== viewingBatch.id && b.course === s.course) || batches[0];
+                                setTransferTargetBatchId(altBatch?.id || '');
+                              }}
+                              className="text-xs px-2.5 py-1 text-orange-700 border-orange-200 hover:bg-orange-50 font-semibold"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5 mr-1" />
+                              Move
+                            </Button>
                           </td>
                         </tr>
                       ))}
@@ -337,7 +380,118 @@ export default function BatchesPage() {
         })()}
       </Modal>
 
-      {/* Create/Edit Modal with Section 3 fields */}
+      {/* Change / Transfer Batch Modal */}
+      {studentForTransfer && (
+        <Modal
+          isOpen={!!studentForTransfer}
+          onClose={() => setStudentForTransfer(null)}
+          title={`Transfer / Change Batch: ${studentForTransfer.student.name}`}
+          size="lg"
+        >
+          {(() => {
+            const currentBatch = batches.find(b => b.id === studentForTransfer.currentBatchId || b.studentIds.includes(studentForTransfer.student.id));
+            const targetBatch = batches.find(b => b.id === transferTargetBatchId);
+
+            return (
+              <form onSubmit={handleExecuteTransfer} className="space-y-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 text-xs">
+                  <div>
+                    <span className="text-gray-400 block">Candidate</span>
+                    <strong className="text-gray-900 text-sm">{studentForTransfer.student.name}</strong>
+                    <p className="text-emerald-700 font-mono font-medium">{studentForTransfer.student.studentId}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block">Current Batch</span>
+                    <strong className="text-purple-900">{currentBatch ? currentBatch.name : 'Unassigned'}</strong>
+                    <p className="text-gray-600">{currentBatch ? `${currentBatch.startTime}-${currentBatch.endTime} • ${currentBatch.room}` : ''}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+                    Select New Target Batch *
+                  </label>
+                  <select
+                    value={transferTargetBatchId}
+                    onChange={(e) => setTransferTargetBatchId(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm text-gray-900 font-medium"
+                    required
+                  >
+                    <option value="">-- Choose New Batch --</option>
+                    {batches
+                      .filter(b => b.id !== currentBatch?.id)
+                      .map((b) => (
+                        <option key={b.id} value={b.id}>
+                          {b.batchIdCode || b.id} - {b.name} ({b.startTime} - {b.endTime} | {b.room} | Faculty: {b.teacherName} | Seats: {b.enrolledStudents}/{b.capacity})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+                    Reason for Batch Transfer *
+                  </label>
+                  <select
+                    value={transferReason}
+                    onChange={(e) => setTransferReason(e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white text-sm text-gray-900"
+                    required
+                  >
+                    <option value="Timing & Schedule Shift Request">Timing & Schedule Shift Request</option>
+                    <option value="Module Advancement / Level Upgrade">Module Advancement / Level Upgrade</option>
+                    <option value="Faculty / Teaching Preference">Faculty / Teaching Preference</option>
+                    <option value="Lab / Software Suite Relocation">Lab / Software Suite Relocation</option>
+                    <option value="Personal Request by Student / Guardian">Personal Request by Student / Guardian</option>
+                    <option value="Practice / Doubt Class Realignment">Practice / Doubt Class Realignment</option>
+                  </select>
+                </div>
+
+                {targetBatch && (
+                  <div className="p-3.5 bg-orange-50/70 border border-orange-200 rounded-xl text-xs space-y-1.5">
+                    <p className="font-bold text-orange-950 flex items-center gap-1.5">
+                      <ArrowRight className="w-4 h-4 text-orange-600" />
+                      Transfer Summary:
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-gray-700">
+                      <div>
+                        <span className="text-gray-400">From: </span>
+                        <strong>{currentBatch?.name || 'Unassigned'}</strong>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">To: </span>
+                        <strong className="text-emerald-800">{targetBatch.name}</strong>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">New Schedule: </span>
+                        <span>{targetBatch.startTime} - {targetBatch.endTime}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">New Lab: </span>
+                        <span>{targetBatch.room}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button type="button" variant="outline" onClick={() => setStudentForTransfer(null)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5"
+                  >
+                    Confirm Batch Transfer
+                  </Button>
+                </div>
+              </form>
+            );
+          })()}
+        </Modal>
+      )}
+
+      {/* Create/Edit Batch Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => { setIsModalOpen(false); setEditingBatch(null); }}
