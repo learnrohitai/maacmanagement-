@@ -41,6 +41,12 @@ interface AppState {
   addInquiry: (inquiry: InquiryLead) => void;
   updateInquiry: (id: string, inquiry: Partial<InquiryLead>) => void;
   deleteInquiry: (id: string) => void;
+
+  // Student Master Actions
+  addStudent: (student: User) => void;
+  updateStudent: (id: string, student: Partial<User>) => void;
+  deleteStudent: (id: string) => void;
+  assignBatchToStudent: (studentId: string, batchId: string) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -126,5 +132,104 @@ export const useStore = create<AppState>((set, get) => ({
   })),
   deleteInquiry: (id) => set((state) => ({
     inquiries: state.inquiries.filter(i => i.id !== id)
-  }))
+  })),
+
+  // Student Master Actions
+  addStudent: (student) => set((state) => {
+    const updatedUsers = [student, ...state.users];
+    const updatedStudents = updatedUsers.filter(u => u.role === 'student');
+    
+    // If student was assigned to a batch, update the batch's enrolled count & studentIds
+    let updatedBatches = state.batches;
+    if (student.assignedBatches && student.assignedBatches.length > 0) {
+      updatedBatches = state.batches.map(b => {
+        if (student.assignedBatches?.includes(b.id) && !b.studentIds.includes(student.id)) {
+          return {
+            ...b,
+            enrolledStudents: b.enrolledStudents + 1,
+            studentIds: [...b.studentIds, student.id]
+          };
+        }
+        return b;
+      });
+    }
+
+    // Also create initial fee record if fee paid > 0
+    let updatedFeeRecords = state.feeRecords;
+    if (student.feesPaid && student.feesPaid > 0) {
+      const newFeeRecord: FeeRecord = {
+        id: `fee-${Date.now()}`,
+        studentId: student.id,
+        studentName: student.name,
+        batchId: student.assignedBatches?.[0] || 'Unassigned',
+        batchName: student.course || 'MAAC Program',
+        amount: student.feesPaid,
+        paidDate: student.admissionDate || new Date().toISOString().split('T')[0],
+        dueDate: student.feesDueDate || new Date().toISOString().split('T')[0],
+        status: (student.feesPaid >= (student.totalFees || 0)) ? 'paid' : 'pending',
+        paymentMethod: 'UPI / Card'
+      };
+      updatedFeeRecords = [newFeeRecord, ...state.feeRecords];
+    }
+
+    return {
+      users: updatedUsers,
+      students: updatedStudents,
+      batches: updatedBatches,
+      feeRecords: updatedFeeRecords
+    };
+  }),
+
+  updateStudent: (id, updates) => set((state) => {
+    const updatedUsers = state.users.map(u => u.id === id ? { ...u, ...updates } : u);
+    return {
+      users: updatedUsers,
+      students: updatedUsers.filter(u => u.role === 'student')
+    };
+  }),
+
+  deleteStudent: (id) => set((state) => {
+    const updatedUsers = state.users.filter(u => u.id !== id);
+    return {
+      users: updatedUsers,
+      students: updatedUsers.filter(u => u.role === 'student'),
+      batches: state.batches.map(b => ({
+        ...b,
+        studentIds: b.studentIds.filter(sId => sId !== id),
+        enrolledStudents: b.studentIds.filter(sId => sId !== id).length
+      }))
+    };
+  }),
+
+  assignBatchToStudent: (studentId, batchId) => set((state) => {
+    const updatedUsers = state.users.map(u => {
+      if (u.id === studentId) {
+        const existingBatches = u.assignedBatches || [];
+        return {
+          ...u,
+          assignedBatches: Array.from(new Set([...existingBatches, batchId])),
+          studentStatus: 'Active' as const,
+          waitingForModule: undefined
+        };
+      }
+      return u;
+    });
+
+    const updatedBatches = state.batches.map(b => {
+      if (b.id === batchId && !b.studentIds.includes(studentId)) {
+        return {
+          ...b,
+          enrolledStudents: b.enrolledStudents + 1,
+          studentIds: [...b.studentIds, studentId]
+        };
+      }
+      return b;
+    });
+
+    return {
+      users: updatedUsers,
+      students: updatedUsers.filter(u => u.role === 'student'),
+      batches: updatedBatches
+    };
+  })
 }));

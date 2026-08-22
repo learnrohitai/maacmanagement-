@@ -1,5 +1,15 @@
 export type UserRole = 'admin' | 'teacher' | 'student' | 'academic-manager' | 'account-manager' | 'counselor';
 
+export type StudentStatus =
+  | 'Waiting for Batch'
+  | 'Active'
+  | 'On Hold/Pause'
+  | 'Course Completed'
+  | 'Passout/Certificate'
+  | 'Dropped (ADO/FDO)';
+
+export type PaymentStatus = 'Paid' | 'Partial' | 'Pending' | 'Overdue';
+
 export interface User {
   id: string;
   name: string;
@@ -8,6 +18,51 @@ export interface User {
   avatar?: string;
   phone?: string;
   joinDate: string;
+  isActive: boolean;
+  // Student Master specific fields
+  studentId?: string;
+  parentName?: string;
+  parentContact?: string;
+  dob?: string;
+  course?: string;
+  admissionDate?: string;
+  counselorName?: string;
+  counselorId?: string;
+  assignedBatches?: string[];
+  feesDueDate?: string;
+  totalFees?: number;
+  feesPaid?: number;
+  paymentStatus?: PaymentStatus;
+  studentStatus?: StudentStatus;
+  profilePhoto?: string;
+  documentsSubmitted?: string[];
+  remarks?: string;
+  waitingForModule?: string;
+}
+
+export interface StudentMaster {
+  id: string;
+  studentId: string;
+  fullName: string;
+  contactNo: string;
+  email: string;
+  parentName: string;
+  parentContact: string;
+  dob: string;
+  course: string;
+  admissionDate: string;
+  counselorName: string;
+  counselorId: string;
+  assignedBatches: string[];
+  feesDueDate: string;
+  totalFees: number;
+  feesPaid: number;
+  paymentStatus: PaymentStatus;
+  studentStatus: StudentStatus;
+  profilePhoto?: string;
+  documentsSubmitted: string[];
+  remarks: string;
+  waitingForModule?: string;
   isActive: boolean;
 }
 
@@ -27,9 +82,9 @@ export interface InquiryLead {
   budget?: number;
 }
 
-
 export interface Batch {
   id: string;
+  batchIdCode?: string;
   name: string;
   course: string;
   teacherId: string;
@@ -44,6 +99,9 @@ export interface Batch {
   endDate: string;
   status: 'active' | 'completed' | 'upcoming';
   room: string;
+  classesCompleted?: number;
+  classesRemaining?: number;
+  isPracticeDoubtClass?: boolean;
 }
 
 export interface Attendance {
