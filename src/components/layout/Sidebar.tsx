@@ -17,7 +17,8 @@ import {
   ChevronLeft,
   Menu,
   X,
-  UserCheck
+  UserCheck,
+  UserPlus
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -30,6 +31,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, roles: ['admin', 'teacher', 'academic-manager', 'counselor'] },
+  { label: 'Create Admission', href: '/admission/new', icon: <UserPlus className="w-5 h-5" />, roles: ['admin', 'counselor'] },
   { label: 'Inquiries & Leads', href: '/inquiries', icon: <UserCheck className="w-5 h-5" />, roles: ['admin'] },
   { label: 'Batches', href: '/batches', icon: <BookOpen className="w-5 h-5" />, roles: ['admin', 'teacher', 'academic-manager'] },
   { label: 'Students', href: '/students', icon: <GraduationCap className="w-5 h-5" />, roles: ['admin', 'teacher', 'academic-manager'] },

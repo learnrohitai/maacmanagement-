@@ -2,12 +2,12 @@
 
 import { motion } from 'framer-motion';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Table';
-import AdmissionModal from '@/components/admission/AdmissionModal';
 import {
   Plus,
   Search,
@@ -30,11 +30,11 @@ import {
 import { StudentStatus, User as UserType } from '@/types';
 
 export default function StudentsPage() {
+  const router = useRouter();
   const { students, batches, deleteStudent, changeStudentBatch, currentUser } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [courseFilter, setCourseFilter] = useState<string>('all');
-  const [isAdmissionModalOpen, setIsAdmissionModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<UserType | null>(null);
 
   // Batch Transfer Modal State
@@ -110,7 +110,7 @@ export default function StudentsPage() {
           <p className="text-gray-500 mt-1">Complete institute student records, statuses, fee schedules, and batch allocations</p>
         </div>
         <Button
-          onClick={() => setIsAdmissionModalOpen(true)}
+          onClick={() => router.push('/admission/new')}
           className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 font-bold"
         >
           <GraduationCap className="w-5 h-5 mr-2" />
@@ -312,12 +312,6 @@ export default function StudentsPage() {
           </table>
         </div>
       </Card>
-
-      {/* Admission Modal */}
-      <AdmissionModal
-        isOpen={isAdmissionModalOpen}
-        onClose={() => setIsAdmissionModalOpen(false)}
-      />
 
       {/* Student Details Inspection Modal */}
       {selectedStudent && (

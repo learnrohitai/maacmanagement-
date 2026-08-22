@@ -2,12 +2,12 @@
 
 import { motion } from 'framer-motion';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import Card, { StatCard } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Table';
-import AdmissionModal from '@/components/admission/AdmissionModal';
 import {
   GraduationCap,
   Calendar,
@@ -36,9 +36,9 @@ import { StudentStatus, User as UserType } from '@/types';
 const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#6366f1'];
 
 export default function CounselorDashboard() {
+  const router = useRouter();
   const { students } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
-  const [isAdmissionModalOpen, setIsAdmissionModalOpen] = useState(false);
   const [selectedStudentDetail, setSelectedStudentDetail] = useState<UserType | null>(null);
 
   const totalAdmissionsCount = students.length;
@@ -148,7 +148,7 @@ export default function CounselorDashboard() {
             </p>
           </div>
           <Button
-            onClick={() => setIsAdmissionModalOpen(true)}
+            onClick={() => router.push('/admission/new')}
             className="bg-white text-emerald-800 hover:bg-emerald-50 shadow-2xl font-bold text-base px-6 py-3.5 rounded-xl border border-white shrink-0"
           >
             <GraduationCap className="w-5 h-5 mr-2 text-emerald-600" />
@@ -251,7 +251,7 @@ export default function CounselorDashboard() {
             </div>
             <Button
               size="sm"
-              onClick={() => setIsAdmissionModalOpen(true)}
+              onClick={() => router.push('/admission/new')}
               className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5"
             >
               <GraduationCap className="w-3.5 h-3.5 mr-1" />
@@ -344,12 +344,6 @@ export default function CounselorDashboard() {
           </table>
         </div>
       </Card>
-
-      {/* Comprehensive Admission Modal */}
-      <AdmissionModal
-        isOpen={isAdmissionModalOpen}
-        onClose={() => setIsAdmissionModalOpen(false)}
-      />
 
       {/* Student Profile Inspection Modal */}
       {selectedStudentDetail && (
