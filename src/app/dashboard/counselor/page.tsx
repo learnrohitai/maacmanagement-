@@ -15,17 +15,14 @@ import {
   PhoneCall,
   Calendar,
   Sparkles,
-  Award,
   BookOpen,
-  Filter,
   Search,
   CheckCircle2,
   Clock,
   GraduationCap,
-  AlertCircle,
-  FileSpreadsheet,
-  Users,
-  Eye
+  Eye,
+  FileCheck2,
+  CreditCard
 } from 'lucide-react';
 import {
   BarChart,
@@ -44,10 +41,9 @@ import { InquiryLead, StudentStatus, User as UserType } from '@/types';
 const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#6366f1'];
 
 export default function CounselorDashboard() {
-  const { inquiries, addInquiry, updateInquiry, batches, users, students } = useStore();
-  const [activeTab, setActiveTab] = useState<'leads' | 'admissions' | 'waiting'>('leads');
+  const { inquiries, addInquiry, updateInquiry, batches, students } = useStore();
+  const [activeTab, setActiveTab] = useState<'admissions' | 'leads'>('admissions');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   
   // Modals
   const [isAddLeadModalOpen, setIsAddLeadModalOpen] = useState(false);
@@ -69,9 +65,9 @@ export default function CounselorDashboard() {
 
   const totalInquiries = inquiries.length;
   const enrolledStudents = students;
-  const waitingForBatchStudents = students.filter(s => s.studentStatus === 'Waiting for Batch');
   const activeStudents = students.filter(s => s.studentStatus === 'Active');
   const totalAdmissionsCount = enrolledStudents.length;
+  const pendingFollowups = inquiries.filter(i => i.status !== 'enrolled' && i.status !== 'lost').length;
 
   const stats = [
     {
@@ -82,25 +78,25 @@ export default function CounselorDashboard() {
       trend: `${inquiries.filter(i => i.status === 'new').length} new this week`
     },
     {
-      title: 'Total Admissions',
+      title: 'Total Admissions Done',
       value: totalAdmissionsCount,
       icon: <GraduationCap className="w-6 h-6" />,
       color: 'green' as const,
-      trend: `${activeStudents.length} active in class`
+      trend: `${activeStudents.length} active in batches`
     },
     {
-      title: 'Waiting for Batch',
-      value: waitingForBatchStudents.length,
-      icon: <Clock className="w-6 h-6" />,
+      title: 'Active Follow-ups',
+      value: pendingFollowups,
+      icon: <PhoneCall className="w-6 h-6" />,
       color: 'orange' as const,
-      trend: 'AM notified for allocation'
+      trend: 'Leads in counseling pipeline'
     },
     {
-      title: 'Active Batches',
-      value: batches.filter(b => b.status === 'active').length,
+      title: 'Institute Programs',
+      value: '5 Courses',
       icon: <BookOpen className="w-6 h-6" />,
       color: 'cyan' as const,
-      trend: 'Admissions open'
+      trend: 'Admissions Open 2026'
     }
   ];
 
@@ -169,7 +165,7 @@ export default function CounselorDashboard() {
   const getStudentStatusBadge = (status?: StudentStatus) => {
     switch (status) {
       case 'Waiting for Batch':
-        return <Badge variant="warning">⏳ Waiting for Batch</Badge>;
+        return <Badge variant="warning">⏳ Waiting for AM Batch</Badge>;
       case 'Active':
         return <Badge variant="success">✅ Active</Badge>;
       case 'On Hold/Pause':
@@ -204,7 +200,7 @@ export default function CounselorDashboard() {
             </div>
             <h1 className="text-3xl font-bold mb-2">Admission Counselor Desk 🎓</h1>
             <p className="text-emerald-50 max-w-xl text-sm md:text-base">
-              Register new student admissions into the master database, manage prospective leads, track document submission, and coordinate batch assignments with Academic Managers.
+              Register new student admissions with complete master details & fee tokens. Upon submission, admissions are seamlessly notified to the Academic Manager (AM) for batch scheduling.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3 shrink-0">
@@ -223,7 +219,7 @@ export default function CounselorDashboard() {
               className="bg-emerald-800/80 hover:bg-emerald-900 text-white shadow-lg text-sm px-4 py-3 rounded-xl border border-emerald-400/30"
             >
               <UserPlus className="w-4 h-4 mr-2" />
-              Quick Walk-in Lead
+              New Walk-in Lead
             </Button>
           </div>
         </div>
@@ -235,46 +231,6 @@ export default function CounselorDashboard() {
           <StatCard key={index} {...stat} />
         ))}
       </div>
-
-      {/* Students Waiting for Batch Notification Banner (Section 2 from notes) */}
-      {waitingForBatchStudents.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-amber-50 border border-amber-200/80 rounded-2xl p-5 shadow-sm"
-        >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-amber-500/20">
-                <Clock className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="font-bold text-amber-900 text-base">
-                  {waitingForBatchStudents.length} Student{waitingForBatchStudents.length > 1 ? 's' : ''} Waiting for Batch Assignment
-                </h4>
-                <p className="text-amber-800 text-xs mt-0.5">
-                  Academic Manager has been notified. Newly admitted or module-completed candidates waiting for batch allocation:
-                </p>
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {waitingForBatchStudents.map(s => (
-                    <span key={s.id} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white border border-amber-200 text-xs font-semibold text-amber-900 shadow-sm">
-                      <span>{s.name}</span>
-                      <span className="text-amber-600 font-normal">({s.course} • {s.studentId || 'New'})</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <Button
-              size="sm"
-              onClick={() => setActiveTab('waiting')}
-              className="bg-amber-600 hover:bg-amber-700 text-white text-xs shrink-0"
-            >
-              View Queue
-            </Button>
-          </div>
-        </motion.div>
-      )}
 
       {/* Analytics Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -309,7 +265,7 @@ export default function CounselorDashboard() {
         <Card className="p-6 flex flex-col justify-between">
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-1">Inquiry Lead Channels</h3>
-            <p className="text-xs text-gray-500 mb-4">Channel attribution for admissions</p>
+            <p className="text-xs text-gray-500 mb-4">Channel attribution for prospective student walk-ins</p>
           </div>
           <div className="h-48 relative">
             <ResponsiveContainer width="100%" height="100%">
@@ -358,16 +314,6 @@ export default function CounselorDashboard() {
               🎓 Student Master Database ({students.length})
             </button>
             <button
-              onClick={() => setActiveTab('waiting')}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
-                activeTab === 'waiting'
-                  ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              ⏳ Waiting for Batch ({waitingForBatchStudents.length})
-            </button>
-            <button
               onClick={() => setActiveTab('leads')}
               className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                 activeTab === 'leads'
@@ -375,7 +321,7 @@ export default function CounselorDashboard() {
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              📋 Inquiries & Leads ({inquiries.length})
+              📋 Prospective Inquiries & Leads ({inquiries.length})
             </button>
           </div>
 
@@ -384,7 +330,7 @@ export default function CounselorDashboard() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search..."
+                placeholder="Search candidates or leads..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 pr-3 py-1.5 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -397,12 +343,12 @@ export default function CounselorDashboard() {
         {activeTab === 'admissions' && (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 text-gray-600 border-b border-gray-100">
+              <thead className="bg-gray-50 text-gray-600 border-b border-gray-100 text-xs">
                 <tr>
                   <th className="py-3 px-4 font-semibold">Student ID & Name</th>
                   <th className="py-3 px-4 font-semibold">Course & Admission Date</th>
                   <th className="py-3 px-4 font-semibold">Parent & Contact</th>
-                  <th className="py-3 px-4 font-semibold">Student Status</th>
+                  <th className="py-3 px-4 font-semibold">Status</th>
                   <th className="py-3 px-4 font-semibold">Fee Status & Due</th>
                   <th className="py-3 px-4 font-semibold">Documents</th>
                   <th className="py-3 px-4 font-semibold text-right">Actions</th>
@@ -478,66 +424,18 @@ export default function CounselorDashboard() {
           </div>
         )}
 
-        {/* Tab 2: Students Waiting for Batch (Section 2 from handwritten note) */}
-        {activeTab === 'waiting' && (
-          <div className="space-y-4">
-            <div className="p-4 bg-amber-50/60 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center justify-between">
-              <div>
-                <strong>Section 2 Rule:</strong> These students have completed admission or module completion and are currently waiting for batch scheduling.
-              </div>
-              <Badge variant="warning">{waitingForBatchStudents.length} Waiting</Badge>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-gray-50 text-gray-600 border-b border-gray-100">
-                  <tr>
-                    <th className="py-3 px-4 font-semibold">Student ID & Name</th>
-                    <th className="py-3 px-4 font-semibold">Enrolled Program</th>
-                    <th className="py-3 px-4 font-semibold">Admission Date</th>
-                    <th className="py-3 px-4 font-semibold">Waiting For Module</th>
-                    <th className="py-3 px-4 font-semibold">Counselor</th>
-                    <th className="py-3 px-4 font-semibold">Remarks</th>
-                    <th className="py-3 px-4 font-semibold text-right">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {waitingForBatchStudents.map((s) => (
-                    <tr key={s.id} className="hover:bg-amber-50/30 transition-colors">
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-gray-900">{s.name}</div>
-                        <div className="text-xs font-mono text-emerald-700">{s.studentId}</div>
-                      </td>
-                      <td className="py-3.5 px-4 font-medium text-gray-800">{s.course}</td>
-                      <td className="py-3.5 px-4 text-xs text-gray-600">{s.admissionDate || s.joinDate}</td>
-                      <td className="py-3.5 px-4 text-xs text-amber-800 font-medium">
-                        {s.waitingForModule || 'Module 1: Foundation'}
-                      </td>
-                      <td className="py-3.5 px-4 text-xs text-gray-600">{s.counselorName || 'Priya Sharma'}</td>
-                      <td className="py-3.5 px-4 text-xs text-gray-500 max-w-xs truncate">{s.remarks || 'No notes'}</td>
-                      <td className="py-3.5 px-4 text-right">
-                        <Badge variant="warning">AM Notified 🔔</Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Tab 3: Leads Pipeline */}
+        {/* Tab 2: Leads Pipeline with Direct Create Admission */}
         {activeTab === 'leads' && (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-gray-50 text-gray-600 border-b border-gray-100">
+              <thead className="bg-gray-50 text-gray-600 border-b border-gray-100 text-xs">
                 <tr>
                   <th className="py-3 px-4 font-semibold">Candidate Name</th>
                   <th className="py-3 px-4 font-semibold">Interested Program</th>
                   <th className="py-3 px-4 font-semibold">Lead Source</th>
                   <th className="py-3 px-4 font-semibold">Stage</th>
                   <th className="py-3 px-4 font-semibold">Follow-Up Date</th>
-                  <th className="py-3 px-4 font-semibold text-right">Direct Admission</th>
+                  <th className="py-3 px-4 font-semibold text-right">Admission Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -580,7 +478,7 @@ export default function CounselorDashboard() {
         )}
       </Card>
 
-      {/* Comprehensive Admission Modal (Section 1 of handwritten notes) */}
+      {/* Comprehensive Admission Modal */}
       <AdmissionModal
         isOpen={isAdmissionModalOpen}
         onClose={() => {

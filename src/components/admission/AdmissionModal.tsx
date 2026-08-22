@@ -15,7 +15,8 @@ import {
   CreditCard,
   CheckSquare,
   Sparkles,
-  AlertCircle
+  AlertCircle,
+  Clock
 } from 'lucide-react';
 import { User as UserType, StudentStatus, PaymentStatus } from '@/types';
 
@@ -258,56 +259,40 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Student Status *
+                Initial Student Status
               </label>
-              <select
-                value={formData.studentStatus}
-                onChange={(e) => setFormData({ ...formData, studentStatus: e.target.value as StudentStatus })}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none text-sm text-gray-900 font-medium"
-              >
-                <option value="Waiting for Batch">⏳ Waiting for Batch (AM to assign)</option>
-                <option value="Active">✅ Active (In Class)</option>
-                <option value="On Hold/Pause">⏸️ On Hold / Pause</option>
-                <option value="Course Completed">🎓 Course Completed</option>
-                <option value="Passout/Certificate">📜 Passout / Certificate Issued</option>
-                <option value="Dropped (ADO/FDO)">❌ Dropped (ADO / FDO)</option>
-              </select>
+              <div className="px-4 py-2.5 rounded-xl border border-amber-200 bg-amber-50/70 text-sm text-amber-900 font-semibold flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>⏳ Waiting for Batch Allocation</span>
+              </div>
+              <p className="text-[11px] text-gray-500 mt-1">
+                New admissions automatically notify Academic Manager for batch scheduling.
+              </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Assigned Batch (Optional)
+                Starting Module / Level
               </label>
-              <select
-                value={formData.assignedBatch}
-                onChange={(e) => {
-                  const bId = e.target.value;
-                  setFormData({
-                    ...formData,
-                    assignedBatch: bId,
-                    studentStatus: bId ? 'Active' : formData.studentStatus
-                  });
-                }}
+              <input
+                type="text"
+                value={formData.waitingForModule}
+                onChange={(e) => setFormData({ ...formData, waitingForModule: e.target.value })}
+                placeholder="e.g. Module 1: Foundation"
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none text-sm text-gray-900"
-              >
-                <option value="">-- No Batch Assigned (Waiting for Batch) --</option>
-                {batches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.batchIdCode || b.id} - {b.name} ({b.startTime} - {b.endTime} • {b.room})
-                  </option>
-                ))}
-              </select>
+              />
+              <p className="text-[11px] text-gray-500 mt-1">
+                Forwarded to Academic Manager (AM) for batch alignment.
+              </p>
             </div>
           </div>
 
-          {formData.studentStatus === 'Waiting for Batch' && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-              <span>
-                <strong>Waiting Module:</strong> This candidate will appear in the Academic Manager&apos;s &quot;Students Waiting for Batch&quot; allocation queue.
-              </span>
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <strong>Batch Assignment Rights Notice:</strong> Counselors record the candidate admission and fee collection. Batch scheduling & allocation is strictly processed by the <strong>Academic Manager (AM)</strong> to ensure batch capacity and timetable balance.
             </div>
-          )}
+          </div>
         </div>
 
         {/* Section 3: Fee & Payment Details */}
