@@ -47,6 +47,7 @@ interface AppState {
   updateStudent: (id: string, student: Partial<User>) => void;
   deleteStudent: (id: string) => void;
   assignBatchToStudent: (studentId: string, batchId: string) => void;
+  changeStudentBatch: (studentId: string, fromBatchId: string, toBatchId: string, reason?: string) => void;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -221,6 +222,52 @@ export const useStore = create<AppState>((set, get) => ({
           ...b,
           enrolledStudents: b.enrolledStudents + 1,
           studentIds: [...b.studentIds, studentId]
+        };
+      }
+      return b;
+    });
+
+    return {
+      users: updatedUsers,
+      students: updatedUsers.filter(u => u.role === 'student'),
+      batches: updatedBatches
+    };
+  }),
+
+  changeStudentBatch: (studentId, fromBatchId, toBatchId, reason) => set((state) => {
+    const transferNote = `[Transferred to new batch on ${new Date().toLocaleDateString('en-IN')}${reason ? `: ${reason}` : ''}]`;
+
+    const updatedUsers = state.users.map(u => {
+      if (u.id === studentId) {
+        const currentBatches = u.assignedBatches || [];
+        const filtered = currentBatches.filter(bId => bId !== fromBatchId);
+        return {
+          ...u,
+          assignedBatches: Array.from(new Set([...filtered, toBatchId])),
+          studentStatus: 'Active' as const,
+          remarks: u.remarks ? `${u.remarks} | ${transferNote}` : transferNote
+        };
+      }
+      return u;
+    });
+
+    const updatedBatches = state.batches.map(b => {
+      // Remove from old batch
+      if (b.id === fromBatchId) {
+        const newStudentIds = b.studentIds.filter(id => id !== studentId);
+        return {
+          ...b,
+          studentIds: newStudentIds,
+          enrolledStudents: Math.max(0, newStudentIds.length)
+        };
+      }
+      // Add to new batch
+      if (b.id === toBatchId && !b.studentIds.includes(studentId)) {
+        const newStudentIds = [...b.studentIds, studentId];
+        return {
+          ...b,
+          studentIds: newStudentIds,
+          enrolledStudents: newStudentIds.length
         };
       }
       return b;
