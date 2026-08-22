@@ -30,9 +30,9 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, roles: ['admin', 'teacher', 'academic-manager', 'counselor'] },
-  { label: 'Inquiries & Leads', href: '/inquiries', icon: <UserCheck className="w-5 h-5" />, roles: ['admin', 'counselor'] },
+  { label: 'Inquiries & Leads', href: '/inquiries', icon: <UserCheck className="w-5 h-5" />, roles: ['admin'] },
   { label: 'Batches', href: '/batches', icon: <BookOpen className="w-5 h-5" />, roles: ['admin', 'teacher', 'academic-manager'] },
-  { label: 'Students', href: '/students', icon: <GraduationCap className="w-5 h-5" />, roles: ['admin', 'teacher', 'academic-manager', 'counselor'] },
+  { label: 'Students', href: '/students', icon: <GraduationCap className="w-5 h-5" />, roles: ['admin', 'teacher', 'academic-manager'] },
   { label: 'Teachers', href: '/teachers', icon: <Users className="w-5 h-5" />, roles: ['admin', 'academic-manager'] },
   { label: 'Attendance', href: '/attendance', icon: <ClipboardList className="w-5 h-5" />, roles: ['admin', 'teacher'] },
   { label: 'Lesson Plans', href: '/lesson-plans', icon: <Calendar className="w-5 h-5" />, roles: ['admin', 'teacher'] },
