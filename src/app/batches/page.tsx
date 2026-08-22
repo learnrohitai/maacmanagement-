@@ -26,12 +26,26 @@ import { courseOptions, weekDays } from '@/lib/mockData';
 import { Batch } from '@/types';
 
 export default function BatchesPage() {
-  const { batches, addBatch, updateBatch, deleteBatch, users } = useStore();
+  const { batches, addBatch, updateBatch, deleteBatch, users, currentUser } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [viewingBatch, setViewingBatch] = useState<Batch | null>(null);
+
+  if (currentUser?.role === 'counselor') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
+        <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mb-4 text-2xl font-bold">
+          🚫
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h2>
+        <p className="text-gray-600 max-w-md text-sm">
+          Batch scheduling and management is restricted to <strong>Academic Managers</strong> and <strong>Teachers</strong>. Counselors have rights for student admissions, inquiry leads, and student master profiles.
+        </p>
+      </div>
+    );
+  }
 
   const [formData, setFormData] = useState({
     batchIdCode: 'MAAC-BAT-01',
