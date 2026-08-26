@@ -783,7 +783,7 @@ export default function AcademicManagerDashboard() {
                       <th className="py-2.5 px-3 font-semibold">Course Enrolled</th>
                       <th className="py-2.5 px-3 font-semibold">Admission Date</th>
                       <th className="py-2.5 px-3 font-semibold">Status</th>
-                      <th className="py-2.5 px-3 font-semibold">Latest Grade</th>
+                      <th className="py-2.5 px-3 font-semibold">Average Grade</th>
                       <th className="py-2.5 px-3 font-semibold">Attendance %</th>
                     </tr>
                   </thead>
@@ -807,25 +807,24 @@ export default function AcademicManagerDashboard() {
                         </td>
                         <td className="py-2.5 px-3">
                           {(() => {
-                            const studentGrades = attendance
-                              .filter(a => a.studentId === s.id && a.batchId === viewingBatch.id && a.grade)
-                              .map(a => a.grade!);
-                            const latestGrade = studentGrades[studentGrades.length - 1] || 'N/A';
+                            const gradeToNum: Record<string, number> = { 'A+': 10, 'A': 9, 'A-': 8, 'B+': 7, 'B': 6, 'B-': 5, 'C+': 4, 'C': 3, 'D': 2, 'F': 1 };
+                            const numToGrade: Record<number, string> = { 10: 'A+', 9: 'A', 8: 'A-', 7: 'B+', 6: 'B', 5: 'B-', 4: 'C+', 3: 'C', 2: 'D', 1: 'F' };
+                            const grades = attendance
+                              .filter(a => a.studentId === s.id && a.batchId === viewingBatch.id && a.grade && gradeToNum[a.grade] !== undefined)
+                              .map(a => gradeToNum[a.grade!]);
+                            const avgGrade = grades.length > 0
+                              ? numToGrade[Math.round(grades.reduce((a, b) => a + b, 0) / grades.length)] || 'N/A'
+                              : 'N/A';
                             const gradeColors: Record<string, string> = {
-                              'A+': 'bg-emerald-100 text-emerald-800',
-                              'A': 'bg-emerald-100 text-emerald-700',
-                              'A-': 'bg-cyan-100 text-cyan-800',
-                              'B+': 'bg-cyan-100 text-cyan-700',
-                              'B': 'bg-amber-100 text-amber-800',
-                              'B-': 'bg-amber-100 text-amber-700',
-                              'C+': 'bg-orange-100 text-orange-800',
-                              'C': 'bg-orange-100 text-orange-700',
-                              'D': 'bg-red-100 text-red-700',
-                              'F': 'bg-red-100 text-red-800'
+                              'A+': 'bg-emerald-100 text-emerald-800', 'A': 'bg-emerald-100 text-emerald-700',
+                              'A-': 'bg-cyan-100 text-cyan-800', 'B+': 'bg-cyan-100 text-cyan-700',
+                              'B': 'bg-amber-100 text-amber-800', 'B-': 'bg-amber-100 text-amber-700',
+                              'C+': 'bg-orange-100 text-orange-800', 'C': 'bg-orange-100 text-orange-700',
+                              'D': 'bg-red-100 text-red-700', 'F': 'bg-red-100 text-red-800'
                             };
                             return (
-                              <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${gradeColors[latestGrade] || 'bg-gray-100 text-gray-600'}`}>
-                                {latestGrade}
+                              <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${gradeColors[avgGrade] || 'bg-gray-100 text-gray-600'}`}>
+                                {avgGrade}
                               </span>
                             );
                           })()}
