@@ -163,40 +163,17 @@ export default function AcademicManagerDashboard() {
             <h3 className="text-lg font-bold text-gray-900">Institute Batches & Schedule Overview</h3>
             <p className="text-xs text-gray-500">Click any batch to see enrolled students with admission details</p>
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setScheduleView('day-mwf')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                scheduleView === 'day-mwf'
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-purple-500" />
+            <select
+              value={scheduleView}
+              onChange={(e) => setScheduleView(e.target.value as ScheduleView)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
             >
-              <Calendar className="w-3.5 h-3.5" />
-              MWF (Mon/Wed/Fri)
-            </button>
-            <button
-              onClick={() => setScheduleView('day-tts')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                scheduleView === 'day-tts'
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              TTS (Tue/Thu/Sat)
-            </button>
-            <button
-              onClick={() => setScheduleView('teacher')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                scheduleView === 'teacher'
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              Teacher Wise
-            </button>
+              <option value="day-mwf">MWF — Mon / Wed / Fri</option>
+              <option value="day-tts">TTS — Tue / Thu / Sat</option>
+              <option value="teacher">Teacher Wise</option>
+            </select>
           </div>
         </div>
 
