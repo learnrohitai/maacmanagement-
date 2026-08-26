@@ -28,7 +28,7 @@ import { courseOptions, weekDays } from '@/lib/mockData';
 import { Batch, User as UserType } from '@/types';
 
 export default function BatchesPage() {
-  const { batches, addBatch, updateBatch, deleteBatch, users, currentUser, changeStudentBatch } = useStore();
+  const { batches, addBatch, updateBatch, deleteBatch, users, currentUser, attendance, changeStudentBatch } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -306,7 +306,7 @@ export default function BatchesPage() {
         isOpen={!!viewingBatch}
         onClose={() => setViewingBatch(null)}
         title={viewingBatch ? `Enrolled Students in ${viewingBatch.name} (${viewingBatch.enrolledStudents})` : 'Students'}
-        size="lg"
+        size="2xl"
       >
         {viewingBatch && (() => {
           const batchStudents = users.filter(u => u.role === 'student' && viewingBatch.studentIds.includes(u.id));
@@ -326,6 +326,8 @@ export default function BatchesPage() {
                         <th className="py-2.5 px-3">Student ID</th>
                         <th className="py-2.5 px-3">Phone</th>
                         <th className="py-2.5 px-3">Status</th>
+                        <th className="py-2.5 px-3">Latest Grade</th>
+                        <th className="py-2.5 px-3">Attendance %</th>
                         <th className="py-2.5 px-3 text-right">Transfer Batch</th>
                       </tr>
                     </thead>
@@ -337,6 +339,43 @@ export default function BatchesPage() {
                           <td className="py-2 px-3 text-xs text-gray-600">{s.phone}</td>
                           <td className="py-2 px-3">
                             <Badge variant="success">Active</Badge>
+                          </td>
+                          <td className="py-2 px-3">
+                            {(() => {
+                              const studentGrades = attendance
+                                .filter(a => a.studentId === s.id && a.batchId === viewingBatch.id && a.grade)
+                                .map(a => a.grade!);
+                              const latestGrade = studentGrades[studentGrades.length - 1] || 'N/A';
+                              const gradeColors: Record<string, string> = {
+                                'A+': 'bg-emerald-100 text-emerald-800', 'A': 'bg-emerald-100 text-emerald-700',
+                                'A-': 'bg-cyan-100 text-cyan-800', 'B+': 'bg-cyan-100 text-cyan-700',
+                                'B': 'bg-amber-100 text-amber-800', 'B-': 'bg-amber-100 text-amber-700',
+                                'C+': 'bg-orange-100 text-orange-800', 'C': 'bg-orange-100 text-orange-700',
+                                'D': 'bg-red-100 text-red-700', 'F': 'bg-red-100 text-red-800'
+                              };
+                              return (
+                                <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${gradeColors[latestGrade] || 'bg-gray-100 text-gray-600'}`}>
+                                  {latestGrade}
+                                </span>
+                              );
+                            })()}
+                          </td>
+                          <td className="py-2 px-3">
+                            {(() => {
+                              const recs = attendance.filter(a => a.studentId === s.id && a.batchId === viewingBatch.id);
+                              const total = recs.length;
+                              const presentCount = recs.filter(a => a.status === 'present' || a.status === 'late').length;
+                              const pct = total > 0 ? Math.round((presentCount / total) * 100) : 0;
+                              const barColor = pct >= 85 ? 'bg-emerald-500' : pct >= 70 ? 'bg-amber-500' : 'bg-red-500';
+                              return (
+                                <div className="flex items-center gap-2">
+                                  <div className="w-16 bg-gray-200 h-1.5 rounded-full overflow-hidden">
+                                    <div className={`${barColor} h-full rounded-full`} style={{ width: `${pct}%` }} />
+                                  </div>
+                                  <span className="text-xs font-bold text-gray-800">{pct}%</span>
+                                </div>
+                              );
+                            })()}
                           </td>
                           <td className="py-2 px-3 text-right">
                             <Button
