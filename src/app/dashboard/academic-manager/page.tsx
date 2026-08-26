@@ -741,7 +741,7 @@ export default function AcademicManagerDashboard() {
           isOpen={!!viewingBatch}
           onClose={() => setViewingBatch(null)}
           title={`${viewingBatch.name} — Enrolled Students`}
-          size="lg"
+          size="2xl"
         >
           <div className="space-y-4">
             <div className="flex items-center gap-4 p-4 bg-purple-50 rounded-xl text-xs">
