@@ -22,7 +22,9 @@ import {
   ArrowLeftRight,
   UserCheck,
   List,
-  LayoutGrid
+  LayoutGrid,
+  Award,
+  TrendingUp
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { User as UserType, Batch } from '@/types';
@@ -30,7 +32,7 @@ import { User as UserType, Batch } from '@/types';
 type ScheduleView = 'day-mwf' | 'day-tts' | 'teacher';
 
 export default function AcademicManagerDashboard() {
-  const { batches, users, assignBatchToStudent, changeStudentBatch, students: storeStudents } = useStore();
+  const { batches, users, attendance, assignBatchToStudent, changeStudentBatch, students: storeStudents } = useStore();
 
   // Modals state
   const [selectedStudentForBatch, setSelectedStudentForBatch] = useState<string | null>(null);
@@ -550,6 +552,209 @@ export default function AcademicManagerDashboard() {
           </div>
         </Card>
       </div>
+
+      {/* Student Grades Section */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Award className="w-5 h-5 text-purple-600" />
+            <h3 className="text-lg font-bold text-gray-900">Student Grades Overview</h3>
+          </div>
+          <Badge variant="default">Based on Attendance Records</Badge>
+        </div>
+        <p className="text-xs text-gray-500 mb-4">
+          Grades assigned by faculty during attendance marking for each student across all batches.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-gray-50 text-gray-600 border-b border-gray-100 text-xs uppercase">
+              <tr>
+                <th className="py-3 px-4 font-semibold">Student Name</th>
+                <th className="py-3 px-4 font-semibold">Student ID</th>
+                <th className="py-3 px-4 font-semibold">Batch</th>
+                <th className="py-3 px-4 font-semibold">Course</th>
+                <th className="py-3 px-4 font-semibold">Latest Grade</th>
+                <th className="py-3 px-4 font-semibold">Grade Trend</th>
+                <th className="py-3 px-4 font-semibold">Assignments Submitted</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {(() => {
+                const gradeMap = new Map<string, { grades: string[]; batchName: string; course: string; studentId: string; assignmentsSubmitted: number; totalRecords: number }>();
+                attendance.forEach((a) => {
+                  const existing = gradeMap.get(a.studentId);
+                  if (existing) {
+                    if (a.grade) existing.grades.push(a.grade);
+                    existing.totalRecords++;
+                    if (a.assignmentSubmitted) existing.assignmentsSubmitted++;
+                  } else {
+                    gradeMap.set(a.studentId, {
+                      grades: a.grade ? [a.grade] : [],
+                      batchName: a.batchName,
+                      course: allStudents.find(s => s.id === a.studentId)?.course || 'N/A',
+                      studentId: allStudents.find(s => s.id === a.studentId)?.studentId || 'MAAC-STU',
+                      assignmentsSubmitted: a.assignmentSubmitted ? 1 : 0,
+                      totalRecords: 1
+                    });
+                  }
+                });
+                const gradeEntries = Array.from(gradeMap.entries());
+                if (gradeEntries.length === 0) {
+                  return (
+                    <tr>
+                      <td colSpan={7} className="text-center py-8 text-gray-500 text-xs">
+                        No grade records found. Grades appear once faculty mark attendance with grades.
+                      </td>
+                    </tr>
+                  );
+                }
+                return gradeEntries.map(([sId, data]) => {
+                  const latestGrade = data.grades[data.grades.length - 1] || 'N/A';
+                  const gradeColors: Record<string, string> = {
+                    'A+': 'bg-emerald-100 text-emerald-800',
+                    'A': 'bg-emerald-100 text-emerald-700',
+                    'B+': 'bg-cyan-100 text-cyan-800',
+                    'B': 'bg-cyan-100 text-cyan-700',
+                    'C+': 'bg-amber-100 text-amber-800',
+                    'C': 'bg-amber-100 text-amber-700',
+                    'D': 'bg-orange-100 text-orange-800',
+                    'F': 'bg-red-100 text-red-800'
+                  };
+                  const gradeTrend = data.grades.length > 1
+                    ? (data.grades.indexOf(data.grades[data.grades.length - 1]) >= data.grades.indexOf(data.grades[0]) ? 'improving' : 'declining')
+                    : 'new';
+                  return (
+                    <tr key={sId} className="hover:bg-gray-50/60 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="font-bold text-gray-900">{allStudents.find(s => s.id === sId)?.name || 'Unknown'}</div>
+                      </td>
+                      <td className="py-3 px-4 text-xs font-mono text-emerald-700">{data.studentId}</td>
+                      <td className="py-3 px-4">
+                        <span className="text-xs font-mono font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md">{data.batchName}</span>
+                      </td>
+                      <td className="py-3 px-4 text-xs font-semibold text-gray-700">{data.course}</td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${gradeColors[latestGrade] || 'bg-gray-100 text-gray-700'}`}>
+                          {latestGrade}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        {gradeTrend === 'improving' ? (
+                          <span className="flex items-center gap-1 text-emerald-600 text-xs font-semibold"><TrendingUp className="w-3.5 h-3.5" /> Improving</span>
+                        ) : gradeTrend === 'declining' ? (
+                          <span className="flex items-center gap-1 text-red-500 text-xs font-semibold">↓ Declining</span>
+                        ) : (
+                          <span className="text-gray-400 text-xs">New</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-xs text-gray-700 font-medium">
+                        {data.assignmentsSubmitted} / {data.totalRecords}
+                      </td>
+                    </tr>
+                  );
+                });
+              })()}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Student Attendance Percentage Section */}
+      <Card className="p-6 border-l-4 border-l-cyan-500">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-5 h-5 text-cyan-600" />
+            <h3 className="text-lg font-bold text-gray-900">Student Attendance Overview (%)</h3>
+          </div>
+          <Badge variant="info">Percentage-wise</Badge>
+        </div>
+        <p className="text-xs text-gray-500 mb-4">
+          Attendance percentage calculated per student across all their enrolled batches. Includes Present, Late, and Absent counts.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-gray-50 text-gray-600 border-b border-gray-100 text-xs uppercase">
+              <tr>
+                <th className="py-3 px-4 font-semibold">Student Name</th>
+                <th className="py-3 px-4 font-semibold">Student ID</th>
+                <th className="py-3 px-4 font-semibold">Batch</th>
+                <th className="py-3 px-4 font-semibold">Total Classes</th>
+                <th className="py-3 px-4 font-semibold">Present</th>
+                <th className="py-3 px-4 font-semibold">Late</th>
+                <th className="py-3 px-4 font-semibold">Absent</th>
+                <th className="py-3 px-4 font-semibold">Attendance %</th>
+                <th className="py-3 px-4 font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {(() => {
+                const attendanceMap = new Map<string, { present: number; late: number; absent: number; batchName: string; studentId: string }>();
+                attendance.forEach((a) => {
+                  const existing = attendanceMap.get(a.studentId);
+                  if (existing) {
+                    if (a.status === 'present') existing.present++;
+                    else if (a.status === 'late') existing.late++;
+                    else existing.absent++;
+                  } else {
+                    attendanceMap.set(a.studentId, {
+                      present: a.status === 'present' ? 1 : 0,
+                      late: a.status === 'late' ? 1 : 0,
+                      absent: a.status === 'absent' ? 1 : 0,
+                      batchName: a.batchName,
+                      studentId: allStudents.find(s => s.id === a.studentId)?.studentId || 'MAAC-STU'
+                    });
+                  }
+                });
+                const entries = Array.from(attendanceMap.entries());
+                if (entries.length === 0) {
+                  return (
+                    <tr>
+                      <td colSpan={9} className="text-center py-8 text-gray-500 text-xs">
+                        No attendance records found yet.
+                      </td>
+                    </tr>
+                  );
+                }
+                return entries.map(([sId, data]) => {
+                  const total = data.present + data.late + data.absent;
+                  const attendancePct = total > 0 ? Math.round(((data.present + data.late) / total) * 100) : 0;
+                  const barColor = attendancePct >= 85 ? 'bg-emerald-500' : attendancePct >= 70 ? 'bg-amber-500' : 'bg-red-500';
+                  const statusText = attendancePct >= 85 ? 'Excellent' : attendancePct >= 70 ? 'Good' : attendancePct >= 50 ? 'Needs Improvement' : 'Critical';
+                  const statusColor = attendancePct >= 85 ? 'text-emerald-700 bg-emerald-50' : attendancePct >= 70 ? 'text-amber-700 bg-amber-50' : attendancePct >= 50 ? 'text-orange-700 bg-orange-50' : 'text-red-700 bg-red-50';
+                  return (
+                    <tr key={sId} className="hover:bg-gray-50/60 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="font-bold text-gray-900">{allStudents.find(s => s.id === sId)?.name || 'Unknown'}</div>
+                      </td>
+                      <td className="py-3 px-4 text-xs font-mono text-emerald-700">{data.studentId}</td>
+                      <td className="py-3 px-4">
+                        <span className="text-xs font-mono font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md">{data.batchName}</span>
+                      </td>
+                      <td className="py-3 px-4 text-xs font-semibold text-gray-800">{total}</td>
+                      <td className="py-3 px-4 text-xs font-semibold text-emerald-700">{data.present}</td>
+                      <td className="py-3 px-4 text-xs font-semibold text-amber-600">{data.late}</td>
+                      <td className="py-3 px-4 text-xs font-semibold text-red-600">{data.absent}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 bg-gray-200 h-2 rounded-full overflow-hidden">
+                            <div className={`${barColor} h-full rounded-full transition-all`} style={{ width: `${attendancePct}%` }} />
+                          </div>
+                          <span className="text-xs font-bold text-gray-800">{attendancePct}%</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${statusColor}`}>
+                          {statusText}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                });
+              })()}
+            </tbody>
+          </table>
+        </div>
+      </Card>
 
       {/* ===== MODALS ===== */}
 
