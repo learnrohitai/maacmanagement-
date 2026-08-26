@@ -154,7 +154,159 @@ export default function AcademicManagerDashboard() {
         ))}
       </div>
 
-      {/* Section 1: Students Waiting for Batch */}
+      {/* TIMETABLE FIRST: Batch Schedule Overview with 3 Views */}
+      <Card className="p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900">Institute Batches & Schedule Overview</h3>
+            <p className="text-xs text-gray-500">Click any batch to see enrolled students with admission details</p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setScheduleView('day-mwf')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                scheduleView === 'day-mwf'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              MWF (Mon/Wed/Fri)
+            </button>
+            <button
+              onClick={() => setScheduleView('day-tts')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                scheduleView === 'day-tts'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              TTS (Tue/Thu/Sat)
+            </button>
+            <button
+              onClick={() => setScheduleView('teacher')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                scheduleView === 'teacher'
+                  ? 'bg-purple-600 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              Teacher Wise
+            </button>
+          </div>
+        </div>
+
+        {/* Day-wise views: show batches grouped */}
+        {scheduleView !== 'teacher' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {scheduleBatches.length === 0 ? (
+              <div className="col-span-full p-6 text-center text-gray-500 text-sm">
+                No batches scheduled for this day group.
+              </div>
+            ) : (
+              scheduleBatches.map((batch) => (
+                <div
+                  key={batch.id}
+                  onClick={() => setViewingBatch(batch)}
+                  className={`p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-lg ${
+                    batch.isPracticeDoubtClass
+                      ? 'border-cyan-200 bg-cyan-50/40 hover:border-cyan-400'
+                      : 'border-gray-200 bg-white hover:border-purple-300'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <span className="text-[11px] font-mono font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md">
+                        {batch.batchIdCode || `BATCH-${batch.id}`}
+                      </span>
+                      <h4 className="font-bold text-gray-900 text-base mt-1">{batch.name}</h4>
+                      <p className="text-xs text-gray-500">{batch.course} • {batch.room}</p>
+                    </div>
+                    {batch.isPracticeDoubtClass ? (
+                      <Badge variant="info">Practice / Doubt</Badge>
+                    ) : (
+                      <Badge variant={batch.status === 'active' ? 'success' : 'default'}>{batch.status}</Badge>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 my-3 p-2.5 bg-gray-50 rounded-xl text-xs">
+                    <div>
+                      <p className="text-gray-400">Faculty / Teacher</p>
+                      <p className="font-semibold text-gray-800">{batch.teacherName}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Timing & Days</p>
+                      <p className="font-semibold text-gray-800">{batch.startTime} - {batch.endTime}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Classes Completed</p>
+                      <p className="font-bold text-emerald-700">{batch.classesCompleted ?? 0} Sessions</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400">Classes Remaining</p>
+                      <p className="font-bold text-orange-600">{batch.classesRemaining ?? 0} Sessions</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-gray-600 pt-2 border-t border-gray-100">
+                    <span>Enrolled: <strong>{batch.enrolledStudents}</strong> students</span>
+                    <span className="text-purple-600 font-medium">Lab: {batch.room}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        ) : (
+          /* Teacher-wise view: group by teacher */
+          <div className="space-y-4">
+            {teachers.map((teacher) => {
+              const teacherBatches = batches.filter(b => b.teacherId === teacher.id);
+              if (teacherBatches.length === 0) return null;
+              return (
+                <div key={teacher.id} className="border border-gray-200 rounded-2xl overflow-hidden">
+                  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 px-5 py-3 border-b border-gray-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-white text-sm font-bold">
+                        {teacher.name.charAt(0)}
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900">{teacher.name}</h4>
+                        <p className="text-xs text-gray-500">{teacherBatches.length} batches • {teacherBatches.reduce((acc, b) => acc + b.enrolledStudents, 0)} students total</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {teacherBatches.map((batch) => (
+                      <div
+                        key={batch.id}
+                        onClick={() => setViewingBatch(batch)}
+                        className="p-3 rounded-xl border border-gray-100 bg-white hover:border-purple-300 hover:shadow-md cursor-pointer transition-all"
+                      >
+                        <div className="flex items-start justify-between mb-1">
+                          <span className="text-[10px] font-mono font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md">
+                            {batch.batchIdCode || `BATCH-${batch.id}`}
+                          </span>
+                          <Badge variant={batch.status === 'active' ? 'success' : 'default'}>{batch.status}</Badge>
+                        </div>
+                        <h5 className="font-bold text-gray-900 text-sm">{batch.name}</h5>
+                        <p className="text-xs text-gray-500 mt-0.5">{batch.course}</p>
+                        <div className="flex items-center justify-between text-xs text-gray-600 mt-2 pt-2 border-t border-gray-100">
+                          <span>{batch.startTime} - {batch.endTime}</span>
+                          <span>{batch.enrolledStudents} students</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+
+      {/* Section 2: Students Waiting for Batch */}
       <Card className="p-6 border-l-4 border-l-amber-500">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div>
@@ -329,158 +481,6 @@ export default function AcademicManagerDashboard() {
             </tbody>
           </table>
         </div>
-      </Card>
-
-      {/* Section 3: Batch Schedule Overview with 3 Views */}
-      <Card className="p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h3 className="text-lg font-bold text-gray-900">Institute Batches & Schedule Overview</h3>
-            <p className="text-xs text-gray-500">Click any batch to see enrolled students with admission details</p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setScheduleView('day-mwf')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                scheduleView === 'day-mwf'
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              MWF (Mon/Wed/Fri)
-            </button>
-            <button
-              onClick={() => setScheduleView('day-tts')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                scheduleView === 'day-tts'
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              TTS (Tue/Thu/Sat)
-            </button>
-            <button
-              onClick={() => setScheduleView('teacher')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                scheduleView === 'teacher'
-                  ? 'bg-purple-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5" />
-              Teacher Wise
-            </button>
-          </div>
-        </div>
-
-        {/* Day-wise views: show batches grouped */}
-        {scheduleView !== 'teacher' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {scheduleBatches.length === 0 ? (
-              <div className="col-span-full p-6 text-center text-gray-500 text-sm">
-                No batches scheduled for this day group.
-              </div>
-            ) : (
-              scheduleBatches.map((batch) => (
-                <div
-                  key={batch.id}
-                  onClick={() => setViewingBatch(batch)}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-lg ${
-                    batch.isPracticeDoubtClass
-                      ? 'border-cyan-200 bg-cyan-50/40 hover:border-cyan-400'
-                      : 'border-gray-200 bg-white hover:border-purple-300'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div>
-                      <span className="text-[11px] font-mono font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md">
-                        {batch.batchIdCode || `BATCH-${batch.id}`}
-                      </span>
-                      <h4 className="font-bold text-gray-900 text-base mt-1">{batch.name}</h4>
-                      <p className="text-xs text-gray-500">{batch.course} • {batch.room}</p>
-                    </div>
-                    {batch.isPracticeDoubtClass ? (
-                      <Badge variant="info">Practice / Doubt</Badge>
-                    ) : (
-                      <Badge variant={batch.status === 'active' ? 'success' : 'default'}>{batch.status}</Badge>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 my-3 p-2.5 bg-gray-50 rounded-xl text-xs">
-                    <div>
-                      <p className="text-gray-400">Faculty / Teacher</p>
-                      <p className="font-semibold text-gray-800">{batch.teacherName}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400">Timing & Days</p>
-                      <p className="font-semibold text-gray-800">{batch.startTime} - {batch.endTime}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400">Classes Completed</p>
-                      <p className="font-bold text-emerald-700">{batch.classesCompleted ?? 0} Sessions</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400">Classes Remaining</p>
-                      <p className="font-bold text-orange-600">{batch.classesRemaining ?? 0} Sessions</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs text-gray-600 pt-2 border-t border-gray-100">
-                    <span>Enrolled: <strong>{batch.enrolledStudents}</strong> students</span>
-                    <span className="text-purple-600 font-medium">Lab: {batch.room}</span>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        ) : (
-          /* Teacher-wise view: group by teacher */
-          <div className="space-y-4">
-            {teachers.map((teacher) => {
-              const teacherBatches = batches.filter(b => b.teacherId === teacher.id);
-              if (teacherBatches.length === 0) return null;
-              return (
-                <div key={teacher.id} className="border border-gray-200 rounded-2xl overflow-hidden">
-                  <div className="bg-gradient-to-r from-purple-50 to-indigo-50 px-5 py-3 border-b border-gray-200">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-white text-sm font-bold">
-                        {teacher.name.charAt(0)}
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-gray-900">{teacher.name}</h4>
-                        <p className="text-xs text-gray-500">{teacherBatches.length} batches • {teacherBatches.reduce((acc, b) => acc + b.enrolledStudents, 0)} students total</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {teacherBatches.map((batch) => (
-                      <div
-                        key={batch.id}
-                        onClick={() => setViewingBatch(batch)}
-                        className="p-3 rounded-xl border border-gray-100 bg-white hover:border-purple-300 hover:shadow-md cursor-pointer transition-all"
-                      >
-                        <div className="flex items-start justify-between mb-1">
-                          <span className="text-[10px] font-mono font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md">
-                            {batch.batchIdCode || `BATCH-${batch.id}`}
-                          </span>
-                          <Badge variant={batch.status === 'active' ? 'success' : 'default'}>{batch.status}</Badge>
-                        </div>
-                        <h5 className="font-bold text-gray-900 text-sm">{batch.name}</h5>
-                        <p className="text-xs text-gray-500 mt-0.5">{batch.course}</p>
-                        <div className="flex items-center justify-between text-xs text-gray-600 mt-2 pt-2 border-t border-gray-100">
-                          <span>{batch.startTime} - {batch.endTime}</span>
-                          <span>{batch.enrolledStudents} students</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </Card>
 
       {/* Teacher Workload Chart */}
