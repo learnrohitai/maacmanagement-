@@ -22,6 +22,7 @@ export default function AttendancePage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedBatch, setSelectedBatch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedTopic, setSelectedTopic] = useState('');
   const [studentTopics, setStudentTopics] = useState<Record<string, string>>({});
   const [studentAssignments, setStudentAssignments] = useState<Record<string, boolean>>({});
   const [studentGrades, setStudentGrades] = useState<Record<string, string>>({});
@@ -114,9 +115,28 @@ export default function AttendancePage() {
 
   const markAllPresent = () => {
     batchStudents.forEach(student => {
-      handleMarkAttendance(student.id, student.name, 'present');
+      handleMarkAttendance(student.id, student.name, 'present', selectedTopic || studentTopics[student.id] || '');
     });
   };
+
+  // Available topics for the dropdown
+  const topicOptions = [
+    'Maya Interface Basics',
+    'Viewport Navigation',
+    'Polygon Modeling Fundamentals',
+    'Character Rigging Intro',
+    'Nuke Compositing Basics',
+    'Houdini FX Fundamentals',
+    'After Effects Motion Graphics',
+    'Figma Design Principles',
+    '3D Texturing & Shading',
+    'Animation Walk Cycle',
+    'Lighting & Rendering',
+    'Roto & Paint Techniques',
+    'Color Correction Basics',
+    'Short Film Production',
+    'Showreel Review Session'
+  ];
 
   const getButtonStyle = (buttonType: string, currentStatus: string | null) => {
     const isActive = currentStatus === buttonType;
@@ -195,6 +215,24 @@ export default function AttendancePage() {
               { value: 'late', label: 'Late' }
             ]}
             className="w-full md:w-48"
+          />
+          <Select
+            value={selectedTopic}
+            onChange={(e) => {
+              const topic = e.target.value;
+              setSelectedTopic(topic);
+              // Auto-fill topic for all students in the batch
+              if (topic) {
+                const updatedTopics: Record<string, string> = {};
+                batchStudents.forEach(s => { updatedTopics[s.id] = topic; });
+                setStudentTopics(prev => ({ ...prev, ...updatedTopics }));
+              }
+            }}
+            options={[
+              { value: '', label: 'Select Topic' },
+              ...topicOptions.map(t => ({ value: t, label: t }))
+            ]}
+            className="w-full md:w-56"
           />
         </div>
       </Card>
@@ -338,13 +376,24 @@ export default function AttendancePage() {
                         {currentUser?.role === 'teacher' && (
                           <>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <input
-                                type="text"
-                                placeholder="e.g. Maya Interface Basics"
-                                value={studentTopics[student.id] || attendanceRecord?.topic || ''}
-                                onChange={(e) => setStudentTopics(prev => ({ ...prev, [student.id]: e.target.value }))}
-                                className="w-48 px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white"
-                              />
+                              <div className="flex flex-col gap-1">
+                                <select
+                                  value={studentTopics[student.id] || attendanceRecord?.topic || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setStudentTopics(prev => ({ ...prev, [student.id]: val }));
+                                    if (status) {
+                                      handleMarkAttendance(student.id, student.name, status, val, studentAssignments[student.id] ?? attendanceRecord?.assignmentSubmitted, studentGrades[student.id] || attendanceRecord?.grade);
+                                    }
+                                  }}
+                                  className="w-52 px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white"
+                                >
+                                  <option value="">— Select Topic —</option>
+                                  {topicOptions.map(t => (
+                                    <option key={t} value={t}>{t}</option>
+                                  ))}
+                                </select>
+                              </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                               <button
