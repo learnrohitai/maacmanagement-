@@ -340,6 +340,7 @@ export const mockAttendance: Attendance[] = [
     status: 'present',
     topic: 'Maya Interface Basics',
     assignmentSubmitted: true,
+    grade: 'A',
     markedBy: '2',
     markedAt: '2024-07-15T09:05:00'
   },
@@ -353,6 +354,7 @@ export const mockAttendance: Attendance[] = [
     status: 'late',
     topic: 'Maya Interface Basics',
     assignmentSubmitted: false,
+    grade: 'B+',
     markedBy: '2',
     markedAt: '2024-07-15T09:15:00'
   },
@@ -366,6 +368,7 @@ export const mockAttendance: Attendance[] = [
     status: 'present',
     topic: 'Viewport Navigation',
     assignmentSubmitted: true,
+    grade: 'A+',
     markedBy: '2',
     markedAt: '2024-07-14T09:03:00'
   },

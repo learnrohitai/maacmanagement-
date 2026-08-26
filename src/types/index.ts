@@ -114,6 +114,7 @@ export interface Attendance {
   status: 'present' | 'absent' | 'late';
   topic?: string;
   assignmentSubmitted?: boolean;
+  grade?: string;
   markedBy: string;
   markedAt: string;
 }

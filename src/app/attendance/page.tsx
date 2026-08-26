@@ -24,6 +24,7 @@ export default function AttendancePage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [studentTopics, setStudentTopics] = useState<Record<string, string>>({});
   const [studentAssignments, setStudentAssignments] = useState<Record<string, boolean>>({});
+  const [studentGrades, setStudentGrades] = useState<Record<string, string>>({});
 
   const students = users.filter(u => u.role === 'student');
 
@@ -82,7 +83,8 @@ export default function AttendancePage() {
     studentName: string,
     status: 'present' | 'absent' | 'late',
     topic?: string,
-    assignmentSubmitted?: boolean
+    assignmentSubmitted?: boolean,
+    grade?: string
   ) => {
     if (!activeBatch) return;
 
@@ -91,7 +93,7 @@ export default function AttendancePage() {
     );
 
     if (existingRecord) {
-      updateAttendance(existingRecord.id, { status, topic, assignmentSubmitted });
+      updateAttendance(existingRecord.id, { status, topic, assignmentSubmitted, grade });
     } else {
       addAttendance({
         id: Date.now().toString() + studentId,
@@ -103,6 +105,7 @@ export default function AttendancePage() {
         status,
         topic: topic || '',
         assignmentSubmitted: assignmentSubmitted || false,
+        grade: grade || '',
         markedBy: currentUser?.id || '',
         markedAt: new Date().toISOString()
       });
@@ -291,6 +294,7 @@ export default function AttendancePage() {
                       <>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Topic Covered</th>
                         <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase">Assignment</th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase">Grade</th>
                         <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase">Mark Attendance</th>
                       </>
                     )}
@@ -299,7 +303,7 @@ export default function AttendancePage() {
                 <tbody className="divide-y divide-gray-100">
                   {studentAttendanceList.length === 0 ? (
                     <tr>
-                      <td colSpan={currentUser?.role === 'teacher' ? 7 : 4} className="px-6 py-12 text-center">
+                      <td colSpan={currentUser?.role === 'teacher' ? 8 : 4} className="px-6 py-12 text-center">
                         <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                         <p className="text-gray-500">No students enrolled in this batch yet.</p>
                       </td>
@@ -348,7 +352,7 @@ export default function AttendancePage() {
                                   const newVal = !(studentAssignments[student.id] ?? attendanceRecord?.assignmentSubmitted ?? false);
                                   setStudentAssignments(prev => ({ ...prev, [student.id]: newVal }));
                                   if (status) {
-                                    handleMarkAttendance(student.id, student.name, status, studentTopics[student.id] || attendanceRecord?.topic, newVal);
+                                    handleMarkAttendance(student.id, student.name, status, studentTopics[student.id] || attendanceRecord?.topic, newVal, studentGrades[student.id] || attendanceRecord?.grade);
                                   }
                                 }}
                                 className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 border-2 ${
@@ -361,12 +365,35 @@ export default function AttendancePage() {
                                 <CheckCircle className="w-5 h-5" />
                               </button>
                             </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              <select
+                                value={studentGrades[student.id] || attendanceRecord?.grade || ''}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setStudentGrades(prev => ({ ...prev, [student.id]: val }));
+                                  if (status) {
+                                    handleMarkAttendance(student.id, student.name, status, studentTopics[student.id] || attendanceRecord?.topic, studentAssignments[student.id] ?? attendanceRecord?.assignmentSubmitted, val);
+                                  }
+                                }}
+                                className="px-2 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white font-semibold text-center"
+                              >
+                                <option value="">—</option>
+                                <option value="A+">A+</option>
+                                <option value="A">A</option>
+                                <option value="B+">B+</option>
+                                <option value="B">B</option>
+                                <option value="C+">C+</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                                <option value="F">F</option>
+                              </select>
+                            </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="flex items-center justify-center gap-2">
                                 {(['present', 'absent', 'late'] as const).map(s => (
                                   <button
                                     key={s}
-                                    onClick={() => handleMarkAttendance(student.id, student.name, s, studentTopics[student.id] || attendanceRecord?.topic, studentAssignments[student.id] ?? attendanceRecord?.assignmentSubmitted)}
+                                    onClick={() => handleMarkAttendance(student.id, student.name, s, studentTopics[student.id] || attendanceRecord?.topic, studentAssignments[student.id] ?? attendanceRecord?.assignmentSubmitted, studentGrades[student.id] || attendanceRecord?.grade)}
                                     className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${getButtonStyle(s, status)} hover:scale-110 border-2 ${status === s ? 'border-transparent' : 'border-transparent'}`}
                                     title={s.charAt(0).toUpperCase() + s.slice(1)}
                                   >
