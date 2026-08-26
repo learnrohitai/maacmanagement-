@@ -14,10 +14,8 @@ import {
   Sparkles,
   BookOpen,
   Search,
-  CreditCard,
   Eye,
-  FileCheck2,
-  DollarSign
+  FileCheck2
 } from 'lucide-react';
 import {
   BarChart,
@@ -26,14 +24,9 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
+  ResponsiveContainer
 } from 'recharts';
 import { StudentStatus, User as UserType } from '@/types';
-
-const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#6366f1'];
 
 export default function CounselorDashboard() {
   const router = useRouter();
@@ -42,9 +35,6 @@ export default function CounselorDashboard() {
   const [selectedStudentDetail, setSelectedStudentDetail] = useState<UserType | null>(null);
 
   const totalAdmissionsCount = students.length;
-  const totalFeesCollected = students.reduce((acc, s) => acc + (s.feesPaid || 0), 0);
-  const fullyPaidCount = students.filter(s => s.paymentStatus === 'Paid').length;
-  const partialPaidCount = students.filter(s => s.paymentStatus === 'Partial').length;
 
   const stats = [
     {
@@ -53,13 +43,6 @@ export default function CounselorDashboard() {
       icon: <GraduationCap className="w-6 h-6" />,
       color: 'green' as const,
       trend: `${totalAdmissionsCount} master entries`
-    },
-    {
-      title: 'Initial Token / Fees Received',
-      value: `₹${(totalFeesCollected / 100000).toFixed(2)}L`,
-      icon: <CreditCard className="w-6 h-6" />,
-      color: 'purple' as const,
-      trend: `${fullyPaidCount} full, ${partialPaidCount} partial`
     },
     {
       title: 'Enrolled Courses',
@@ -86,17 +69,6 @@ export default function CounselorDashboard() {
   const courseData = Object.keys(courseCountMap).map(course => ({
     name: course,
     count: courseCountMap[course]
-  }));
-
-  // Fee Status Distribution Data
-  const feeStatusMap: Record<string, number> = {};
-  students.forEach(s => {
-    const status = s.paymentStatus || 'Pending';
-    feeStatusMap[status] = (feeStatusMap[status] || 0) + 1;
-  });
-  const feeStatusData = Object.keys(feeStatusMap).map(status => ({
-    name: status,
-    value: feeStatusMap[status]
   }));
 
   const getStudentStatusBadge = (status?: StudentStatus) => {
@@ -165,8 +137,8 @@ export default function CounselorDashboard() {
       </div>
 
       {/* Analytics Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 p-6">
+      <div className="grid grid-cols-1 gap-6">
+        <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Admissions by Course Program</h3>
@@ -191,41 +163,6 @@ export default function CounselorDashboard() {
                 <Bar dataKey="count" fill="#10b981" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
-        </Card>
-
-        <Card className="p-6 flex flex-col justify-between">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">Fee Payment Distribution</h3>
-            <p className="text-xs text-gray-500 mb-4">Paid vs Partial vs Pending Tokens</p>
-          </div>
-          <div className="h-48 relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={feeStatusData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={75}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {feeStatusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
-            {feeStatusData.map((s, idx) => (
-              <div key={s.name} className="flex items-center gap-1.5 text-gray-600">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }} />
-                <span>{s.name} ({s.value})</span>
-              </div>
-            ))}
           </div>
         </Card>
       </div>
@@ -268,7 +205,6 @@ export default function CounselorDashboard() {
                 <th className="py-3 px-4 font-semibold">Course & Admission Date</th>
                 <th className="py-3 px-4 font-semibold">Parent & Contact</th>
                 <th className="py-3 px-4 font-semibold">Status</th>
-                <th className="py-3 px-4 font-semibold">Fee Status & Due</th>
                 <th className="py-3 px-4 font-semibold">Documents</th>
                 <th className="py-3 px-4 font-semibold text-right">Action</th>
               </tr>
@@ -276,7 +212,7 @@ export default function CounselorDashboard() {
             <tbody className="divide-y divide-gray-100">
               {filteredAdmissions.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-gray-500">
+                  <td colSpan={6} className="text-center py-12 text-gray-500">
                     No admission records found matching your search.
                   </td>
                 </tr>
@@ -299,23 +235,6 @@ export default function CounselorDashboard() {
                     </td>
                     <td className="py-3.5 px-4">
                       {getStudentStatusBadge(student.studentStatus)}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="text-xs font-semibold text-gray-800">
-                        ₹{student.feesPaid?.toLocaleString() || '0'} / ₹{student.totalFees?.toLocaleString() || '0'}
-                      </div>
-                      <span className={`inline-block text-[11px] px-2 py-0.5 rounded-md font-medium ${
-                        student.paymentStatus === 'Paid'
-                          ? 'bg-green-100 text-green-800'
-                          : student.paymentStatus === 'Partial'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {student.paymentStatus || 'Pending'}
-                      </span>
-                      {student.feesDueDate && (
-                        <div className="text-[10px] text-gray-400 mt-0.5">Due: {student.feesDueDate}</div>
-                      )}
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="text-xs text-gray-600">
@@ -362,16 +281,10 @@ export default function CounselorDashboard() {
                 <p className="text-xs font-mono text-emerald-800 font-semibold">{selectedStudentDetail.studentId || 'MAAC-STUDENT'}</p>
                 <p className="text-xs text-gray-500">{selectedStudentDetail.course} • Admitted: {selectedStudentDetail.admissionDate || selectedStudentDetail.joinDate}</p>
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 bg-gray-50 p-4 rounded-xl text-xs">
+            </div>              <div className="grid grid-cols-2 gap-3 bg-gray-50 p-4 rounded-xl text-xs">
               <div>
                 <p className="text-gray-400">Student Status</p>
                 <div className="mt-1">{getStudentStatusBadge(selectedStudentDetail.studentStatus)}</div>
-              </div>
-              <div>
-                <p className="text-gray-400">Fees Status</p>
-                <p className="font-bold text-gray-900 mt-1">₹{selectedStudentDetail.feesPaid?.toLocaleString()} / ₹{selectedStudentDetail.totalFees?.toLocaleString()} ({selectedStudentDetail.paymentStatus})</p>
               </div>
               <div>
                 <p className="text-gray-400">Parent / Guardian</p>
@@ -384,10 +297,6 @@ export default function CounselorDashboard() {
               <div>
                 <p className="text-gray-400">Counselor In-charge</p>
                 <p className="font-semibold text-gray-800">{selectedStudentDetail.counselorName || 'Priya Sharma'}</p>
-              </div>
-              <div>
-                <p className="text-gray-400">Next Due Date</p>
-                <p className="font-semibold text-gray-800">{selectedStudentDetail.feesDueDate || 'N/A'}</p>
               </div>
             </div>
 

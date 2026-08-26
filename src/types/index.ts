@@ -111,7 +111,9 @@ export interface Attendance {
   batchId: string;
   batchName: string;
   date: string;
-  status: 'present' | 'absent' | 'late' | 'excused';
+  status: 'present' | 'absent' | 'late';
+  topic?: string;
+  assignmentSubmitted?: boolean;
   markedBy: string;
   markedAt: string;
 }

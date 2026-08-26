@@ -12,7 +12,6 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  AlertCircle,
   Download,
   Users,
   BookOpen
@@ -23,6 +22,8 @@ export default function AttendancePage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedBatch, setSelectedBatch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [studentTopics, setStudentTopics] = useState<Record<string, string>>({});
+  const [studentAssignments, setStudentAssignments] = useState<Record<string, boolean>>({});
 
   const students = users.filter(u => u.role === 'student');
 
@@ -73,14 +74,15 @@ export default function AttendancePage() {
       present: allRecords.filter(a => a.status === 'present').length,
       absent: allRecords.filter(a => a.status === 'absent').length,
       late: allRecords.filter(a => a.status === 'late').length,
-      excused: allRecords.filter(a => a.status === 'excused').length,
     };
   }, [attendance, selectedDate, activeBatchId, batchStudents]);
 
   const handleMarkAttendance = (
     studentId: string,
     studentName: string,
-    status: 'present' | 'absent' | 'late' | 'excused'
+    status: 'present' | 'absent' | 'late',
+    topic?: string,
+    assignmentSubmitted?: boolean
   ) => {
     if (!activeBatch) return;
 
@@ -89,7 +91,7 @@ export default function AttendancePage() {
     );
 
     if (existingRecord) {
-      updateAttendance(existingRecord.id, { status });
+      updateAttendance(existingRecord.id, { status, topic, assignmentSubmitted });
     } else {
       addAttendance({
         id: Date.now().toString() + studentId,
@@ -99,6 +101,8 @@ export default function AttendancePage() {
         batchName: activeBatch.name,
         date: selectedDate,
         status,
+        topic: topic || '',
+        assignmentSubmitted: assignmentSubmitted || false,
         markedBy: currentUser?.id || '',
         markedAt: new Date().toISOString()
       });
@@ -126,10 +130,6 @@ export default function AttendancePage() {
         return isActive
           ? 'bg-yellow-500 text-white shadow-md shadow-yellow-200'
           : 'bg-yellow-100 text-yellow-600 hover:bg-yellow-500 hover:text-white hover:shadow-md hover:shadow-yellow-200';
-      case 'excused':
-        return isActive
-          ? 'bg-blue-500 text-white shadow-md shadow-blue-200'
-          : 'bg-blue-100 text-blue-600 hover:bg-blue-500 hover:text-white hover:shadow-md hover:shadow-blue-200';
       default:
         return 'bg-gray-100 text-gray-500';
     }
@@ -140,7 +140,6 @@ export default function AttendancePage() {
       case 'present': return 'success' as const;
       case 'absent': return 'danger' as const;
       case 'late': return 'warning' as const;
-      case 'excused': return 'info' as const;
       default: return 'default' as const;
     }
   };
@@ -190,8 +189,7 @@ export default function AttendancePage() {
               { value: 'all', label: 'All Status' },
               { value: 'present', label: 'Present' },
               { value: 'absent', label: 'Absent' },
-              { value: 'late', label: 'Late' },
-              { value: 'excused', label: 'Excused' }
+              { value: 'late', label: 'Late' }
             ]}
             className="w-full md:w-48"
           />
@@ -288,16 +286,20 @@ export default function AttendancePage() {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">#</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Student</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Email</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Attendance Status</th>
                     {currentUser?.role === 'teacher' && (
-                      <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase">Mark Attendance</th>
+                      <>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Topic Covered</th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase">Assignment</th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase">Mark Attendance</th>
+                      </>
                     )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {studentAttendanceList.length === 0 ? (
                     <tr>
-                      <td colSpan={currentUser?.role === 'teacher' ? 5 : 4} className="px-6 py-12 text-center">
+                      <td colSpan={currentUser?.role === 'teacher' ? 7 : 4} className="px-6 py-12 text-center">
                         <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                         <p className="text-gray-500">No students enrolled in this batch yet.</p>
                       </td>
@@ -330,23 +332,52 @@ export default function AttendancePage() {
                           </Badge>
                         </td>
                         {currentUser?.role === 'teacher' && (
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center justify-center gap-2">
-                              {(['present', 'absent', 'late', 'excused'] as const).map(s => (
-                                <button
-                                  key={s}
-                                  onClick={() => handleMarkAttendance(student.id, student.name, s)}
-                                  className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${getButtonStyle(s, status)} hover:scale-110 border-2 ${status === s ? 'border-transparent' : 'border-transparent'}`}
-                                  title={s.charAt(0).toUpperCase() + s.slice(1)}
-                                >
-                                  {s === 'present' ? <CheckCircle className="w-5 h-5" /> :
-                                   s === 'absent' ? <XCircle className="w-5 h-5" /> :
-                                   s === 'late' ? <Clock className="w-5 h-5" /> :
-                                   <AlertCircle className="w-5 h-5" />}
-                                </button>
-                              ))}
-                            </div>
-                          </td>
+                          <>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <input
+                                type="text"
+                                placeholder="e.g. Maya Interface Basics"
+                                value={studentTopics[student.id] || attendanceRecord?.topic || ''}
+                                onChange={(e) => setStudentTopics(prev => ({ ...prev, [student.id]: e.target.value }))}
+                                className="w-48 px-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white"
+                              />
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-center">
+                              <button
+                                onClick={() => {
+                                  const newVal = !(studentAssignments[student.id] ?? attendanceRecord?.assignmentSubmitted ?? false);
+                                  setStudentAssignments(prev => ({ ...prev, [student.id]: newVal }));
+                                  if (status) {
+                                    handleMarkAttendance(student.id, student.name, status, studentTopics[student.id] || attendanceRecord?.topic, newVal);
+                                  }
+                                }}
+                                className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 border-2 ${
+                                  (studentAssignments[student.id] ?? attendanceRecord?.assignmentSubmitted ?? false)
+                                    ? 'bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-200'
+                                    : 'bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200'
+                                } hover:scale-110`}
+                                title="Toggle Assignment Submitted"
+                              >
+                                <CheckCircle className="w-5 h-5" />
+                              </button>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center justify-center gap-2">
+                                {(['present', 'absent', 'late'] as const).map(s => (
+                                  <button
+                                    key={s}
+                                    onClick={() => handleMarkAttendance(student.id, student.name, s, studentTopics[student.id] || attendanceRecord?.topic, studentAssignments[student.id] ?? attendanceRecord?.assignmentSubmitted)}
+                                    className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${getButtonStyle(s, status)} hover:scale-110 border-2 ${status === s ? 'border-transparent' : 'border-transparent'}`}
+                                    title={s.charAt(0).toUpperCase() + s.slice(1)}
+                                  >
+                                    {s === 'present' ? <CheckCircle className="w-5 h-5" /> :
+                                     s === 'absent' ? <XCircle className="w-5 h-5" /> :
+                                     <Clock className="w-5 h-5" />}
+                                  </button>
+                                ))}
+                              </div>
+                            </td>
+                          </>
                         )}
                       </motion.tr>
                     ))

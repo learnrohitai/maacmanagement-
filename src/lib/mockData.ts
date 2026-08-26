@@ -338,6 +338,8 @@ export const mockAttendance: Attendance[] = [
     batchName: 'Animation Premium',
     date: '2024-07-15',
     status: 'present',
+    topic: 'Maya Interface Basics',
+    assignmentSubmitted: true,
     markedBy: '2',
     markedAt: '2024-07-15T09:05:00'
   },
@@ -349,6 +351,8 @@ export const mockAttendance: Attendance[] = [
     batchName: 'Animation Premium',
     date: '2024-07-15',
     status: 'late',
+    topic: 'Maya Interface Basics',
+    assignmentSubmitted: false,
     markedBy: '2',
     markedAt: '2024-07-15T09:15:00'
   },
@@ -360,6 +364,8 @@ export const mockAttendance: Attendance[] = [
     batchName: 'Animation Premium',
     date: '2024-07-14',
     status: 'present',
+    topic: 'Viewport Navigation',
+    assignmentSubmitted: true,
     markedBy: '2',
     markedAt: '2024-07-14T09:03:00'
   },
@@ -371,6 +377,8 @@ export const mockAttendance: Attendance[] = [
     batchName: 'Animation Premium',
     date: '2024-07-14',
     status: 'absent',
+    topic: '',
+    assignmentSubmitted: false,
     markedBy: '2',
     markedAt: '2024-07-14T09:05:00'
   }
