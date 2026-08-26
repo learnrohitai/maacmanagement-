@@ -376,24 +376,9 @@ export default function AttendancePage() {
                         {currentUser?.role === 'teacher' && (
                           <>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex flex-col gap-1">
-                                <select
-                                  value={studentTopics[student.id] || attendanceRecord?.topic || ''}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-                                    setStudentTopics(prev => ({ ...prev, [student.id]: val }));
-                                    if (status) {
-                                      handleMarkAttendance(student.id, student.name, status, val, studentAssignments[student.id] ?? attendanceRecord?.assignmentSubmitted, studentGrades[student.id] || attendanceRecord?.grade);
-                                    }
-                                  }}
-                                  className="w-52 px-2.5 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white"
-                                >
-                                  <option value="">— Select Topic —</option>
-                                  {topicOptions.map(t => (
-                                    <option key={t} value={t}>{t}</option>
-                                  ))}
-                                </select>
-                              </div>
+                              <span className="text-xs font-medium text-gray-800 bg-purple-50 px-2.5 py-1 rounded-lg">
+                                {studentTopics[student.id] || attendanceRecord?.topic || selectedTopic || '—'}
+                              </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                               <button
