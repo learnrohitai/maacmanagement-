@@ -65,7 +65,7 @@ export default function BatchesPage() {
     startTime: '09:00',
     endTime: '12:00',
     days: [] as string[],
-    capacity: 30,
+    capacity: 999,
     startDate: '',
     endDate: '',
     room: '',
@@ -118,7 +118,7 @@ export default function BatchesPage() {
       startTime: '09:00',
       endTime: '12:00',
       days: [],
-      capacity: 30,
+      capacity: 999,
       startDate: '',
       endDate: '',
       room: '',
@@ -138,7 +138,7 @@ export default function BatchesPage() {
       startTime: batch.startTime,
       endTime: batch.endTime,
       days: batch.days,
-      capacity: batch.capacity,
+      capacity: batch.capacity || 999,
       startDate: batch.startDate,
       endDate: batch.endDate,
       room: batch.room,
@@ -255,7 +255,7 @@ export default function BatchesPage() {
                     </div>
                     <div className="flex items-center text-gray-700">
                       <Users className="w-3.5 h-3.5 mr-2 text-cyan-500 shrink-0" />
-                      <span>{batch.enrolledStudents}/{batch.capacity} Students Enrolled</span>
+                      <span>{batch.enrolledStudents} Students Enrolled</span>
                     </div>
                     <div className="flex items-center text-gray-700">
                       <MapPin className="w-3.5 h-3.5 mr-2 text-green-500 shrink-0" />
@@ -279,20 +279,7 @@ export default function BatchesPage() {
                     </div>
                   </div>
 
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-gray-500">Occupancy</span>
-                      <span className="font-medium">{Math.round((batch.enrolledStudents / batch.capacity) * 100)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${(batch.enrolledStudents / batch.capacity) * 100}%` }}
-                        transition={{ duration: 1, delay: index * 0.2 }}
-                        className="bg-gradient-to-r from-purple-500 to-cyan-500 h-1.5 rounded-full"
-                      />
-                    </div>
-                  </div>
+
                 </div>
 
                 <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
@@ -422,7 +409,7 @@ export default function BatchesPage() {
                       .filter(b => b.id !== currentBatch?.id)
                       .map((b) => (
                         <option key={b.id} value={b.id}>
-                          {b.batchIdCode || b.id} - {b.name} ({b.startTime} - {b.endTime} | {b.room} | Faculty: {b.teacherName} | Seats: {b.enrolledStudents}/{b.capacity})
+                          {b.batchIdCode || b.id} - {b.name} ({b.startTime} - {b.endTime} | {b.room} | Faculty: {b.teacherName} | Enrolled: {b.enrolledStudents})
                         </option>
                       ))}
                   </select>
@@ -584,14 +571,6 @@ export default function BatchesPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Input
-              label="Batch Capacity *"
-              type="number"
-              value={formData.capacity}
-              onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) })}
-              min="1"
-              required
-            />
             <Input
               label="Classes Completed"
               type="number"

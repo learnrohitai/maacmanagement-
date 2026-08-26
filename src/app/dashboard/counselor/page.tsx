@@ -116,7 +116,7 @@ export default function CounselorDashboard() {
             </div>
             <h1 className="text-3xl font-bold mb-2">Counselor Admission Desk 🎓</h1>
             <p className="text-emerald-50 max-w-xl text-sm md:text-base">
-              Create new student admissions, record candidate details, guardian contacts, fee schedules, and submitted documents. Admissions are submitted and automatically forwarded to Academic Managers for batch scheduling.
+              Create new student admissions, record candidate details, guardian contacts, and submitted documents. Admissions are submitted and automatically forwarded to Academic Managers for batch scheduling.
             </p>
           </div>
           <Button

@@ -447,7 +447,7 @@ export default function StudentsPage() {
                       .filter(b => b.id !== currentBatch?.id)
                       .map((b) => (
                         <option key={b.id} value={b.id}>
-                          {b.batchIdCode || b.id} - {b.name} ({b.startTime} - {b.endTime} | {b.room} | Faculty: {b.teacherName} | Seats: {b.enrolledStudents}/{b.capacity})
+                          {b.batchIdCode || b.id} - {b.name} ({b.startTime} - {b.endTime} | {b.room} | Faculty: {b.teacherName} | Enrolled: {b.enrolledStudents})
                         </option>
                       ))}
                   </select>

@@ -175,24 +175,14 @@ export default function TeacherDashboard() {
                 </div>
                 <div className="flex items-center text-gray-600">
                   <Users className="w-4 h-4 mr-2" />
-                  {batch.enrolledStudents}/{batch.capacity} students
+                  {batch.enrolledStudents} students
                 </div>
                 <div className="flex items-center text-gray-600">
                   <Calendar className="w-4 h-4 mr-2" />
                   {batch.days.join(', ')}
                 </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-gradient-to-r from-purple-500 to-cyan-500 h-2 rounded-full"
-                    style={{ width: `${(batch.enrolledStudents / batch.capacity) * 100}%` }}
-                  />
-                </div>
-                <span className="text-xs text-gray-500 ml-2">
-                  {Math.round((batch.enrolledStudents / batch.capacity) * 100)}%
-                </span>
-              </div>
+
             </motion.div>
           ))}
         </div>
