@@ -330,61 +330,38 @@ export const mockBatches: Batch[] = [
 ];
 
 export const mockAttendance: Attendance[] = [
-  {
-    id: '1',
-    studentId: '4',
-    studentName: 'Amit Kumar',
-    batchId: '1',
-    batchName: 'Animation Premium',
-    date: '2024-07-15',
-    status: 'present',
-    topic: 'Maya Interface Basics',
-    assignmentSubmitted: true,
-    grade: 'A',
-    markedBy: '2',
-    markedAt: '2024-07-15T09:05:00'
-  },
-  {
-    id: '2',
-    studentId: '5',
-    studentName: 'Sneha Gupta',
-    batchId: '1',
-    batchName: 'Animation Premium',
-    date: '2024-07-15',
-    status: 'late',
-    topic: 'Maya Interface Basics',
-    assignmentSubmitted: false,
-    grade: 'B+',
-    markedBy: '2',
-    markedAt: '2024-07-15T09:15:00'
-  },
-  {
-    id: '3',
-    studentId: '4',
-    studentName: 'Amit Kumar',
-    batchId: '1',
-    batchName: 'Animation Premium',
-    date: '2024-07-14',
-    status: 'present',
-    topic: 'Viewport Navigation',
-    assignmentSubmitted: true,
-    grade: 'A+',
-    markedBy: '2',
-    markedAt: '2024-07-14T09:03:00'
-  },
-  {
-    id: '4',
-    studentId: '5',
-    studentName: 'Sneha Gupta',
-    batchId: '1',
-    batchName: 'Animation Premium',
-    date: '2024-07-14',
-    status: 'absent',
-    topic: '',
-    assignmentSubmitted: false,
-    markedBy: '2',
-    markedAt: '2024-07-14T09:05:00'
-  }
+  // === Amit Kumar (Batch 1 - Animation Premium) ===
+  { id: 'att-01', studentId: '4', studentName: 'Amit Kumar', batchId: '1', batchName: 'Animation Premium', date: '2026-08-25', status: 'present', topic: 'Character Rigging Intro', assignmentSubmitted: true, grade: 'A+', markedBy: '2', markedAt: '2026-08-25T09:03:00' },
+  { id: 'att-02', studentId: '4', studentName: 'Amit Kumar', batchId: '1', batchName: 'Animation Premium', date: '2026-08-22', status: 'present', topic: 'Polygon Modeling Fundamentals', assignmentSubmitted: true, grade: 'A', markedBy: '2', markedAt: '2026-08-22T09:05:00' },
+  { id: 'att-03', studentId: '4', studentName: 'Amit Kumar', batchId: '1', batchName: 'Animation Premium', date: '2026-08-20', status: 'present', topic: 'Viewport Navigation', assignmentSubmitted: true, grade: 'A+', markedBy: '2', markedAt: '2026-08-20T09:04:00' },
+  { id: 'att-04', studentId: '4', studentName: 'Amit Kumar', batchId: '1', batchName: 'Animation Premium', date: '2026-08-18', status: 'late', topic: 'Maya Interface Basics', assignmentSubmitted: true, grade: 'A', markedBy: '2', markedAt: '2026-08-18T09:12:00' },
+  { id: 'att-05', studentId: '4', studentName: 'Amit Kumar', batchId: '1', batchName: 'Animation Premium', date: '2026-08-15', status: 'present', topic: '3D Texturing & Shading', assignmentSubmitted: true, grade: 'B+', markedBy: '2', markedAt: '2026-08-15T09:03:00' },
+  { id: 'att-06', studentId: '4', studentName: 'Amit Kumar', batchId: '1', batchName: 'Animation Premium', date: '2026-08-13', status: 'present', topic: 'Lighting & Rendering', assignmentSubmitted: false, grade: 'B+', markedBy: '2', markedAt: '2026-08-13T09:05:00' },
+  { id: 'att-07', studentId: '4', studentName: 'Amit Kumar', batchId: '1', batchName: 'Animation Premium', date: '2026-08-11', status: 'present', topic: 'Animation Walk Cycle', assignmentSubmitted: true, grade: 'A', markedBy: '2', markedAt: '2026-08-11T09:04:00' },
+  // === Sneha Gupta (Batch 1 - Animation Premium) ===
+  { id: 'att-08', studentId: '5', studentName: 'Sneha Gupta', batchId: '1', batchName: 'Animation Premium', date: '2026-08-25', status: 'present', topic: 'Character Rigging Intro', assignmentSubmitted: true, grade: 'B+', markedBy: '2', markedAt: '2026-08-25T09:06:00' },
+  { id: 'att-09', studentId: '5', studentName: 'Sneha Gupta', batchId: '1', batchName: 'Animation Premium', date: '2026-08-22', status: 'late', topic: 'Polygon Modeling Fundamentals', assignmentSubmitted: false, grade: 'B', markedBy: '2', markedAt: '2026-08-22T09:14:00' },
+  { id: 'att-10', studentId: '5', studentName: 'Sneha Gupta', batchId: '1', batchName: 'Animation Premium', date: '2026-08-20', status: 'present', topic: 'Viewport Navigation', assignmentSubmitted: true, grade: 'A-', markedBy: '2', markedAt: '2026-08-20T09:05:00' },
+  { id: 'att-11', studentId: '5', studentName: 'Sneha Gupta', batchId: '1', batchName: 'Animation Premium', date: '2026-08-18', status: 'absent', topic: '', assignmentSubmitted: false, grade: '', markedBy: '2', markedAt: '2026-08-18T09:05:00' },
+  { id: 'att-12', studentId: '5', studentName: 'Sneha Gupta', batchId: '1', batchName: 'Animation Premium', date: '2026-08-15', status: 'present', topic: '3D Texturing & Shading', assignmentSubmitted: true, grade: 'B+', markedBy: '2', markedAt: '2026-08-15T09:07:00' },
+  { id: 'att-13', studentId: '5', studentName: 'Sneha Gupta', batchId: '1', batchName: 'Animation Premium', date: '2026-08-13', status: 'present', topic: 'Lighting & Rendering', assignmentSubmitted: true, grade: 'B', markedBy: '2', markedAt: '2026-08-13T09:06:00' },
+  { id: 'att-14', studentId: '5', studentName: 'Sneha Gupta', batchId: '1', batchName: 'Animation Premium', date: '2026-08-11', status: 'absent', topic: '', assignmentSubmitted: false, grade: '', markedBy: '2', markedAt: '2026-08-11T09:05:00' },
+  // === Ananya Verma (Batch 2 - VFX Professional) ===
+  { id: 'att-15', studentId: '12', studentName: 'Ananya Verma', batchId: '2', batchName: 'VFX Professional', date: '2026-08-25', status: 'present', topic: 'Nuke Compositing Basics', assignmentSubmitted: true, grade: 'A', markedBy: '3', markedAt: '2026-08-25T14:03:00' },
+  { id: 'att-16', studentId: '12', studentName: 'Ananya Verma', batchId: '2', batchName: 'VFX Professional', date: '2026-08-22', status: 'present', topic: 'Roto & Paint Techniques', assignmentSubmitted: true, grade: 'A+', markedBy: '3', markedAt: '2026-08-22T14:05:00' },
+  { id: 'att-17', studentId: '12', studentName: 'Ananya Verma', batchId: '2', batchName: 'VFX Professional', date: '2026-08-20', status: 'present', topic: 'Color Correction Basics', assignmentSubmitted: true, grade: 'A', markedBy: '3', markedAt: '2026-08-20T14:04:00' },
+  { id: 'att-18', studentId: '12', studentName: 'Ananya Verma', batchId: '2', batchName: 'VFX Professional', date: '2026-08-18', status: 'present', topic: 'Houdini FX Fundamentals', assignmentSubmitted: true, grade: 'A-', markedBy: '3', markedAt: '2026-08-18T14:03:00' },
+  { id: 'att-19', studentId: '12', studentName: 'Ananya Verma', batchId: '2', batchName: 'VFX Professional', date: '2026-08-15', status: 'late', topic: 'Short Film Production', assignmentSubmitted: false, grade: 'B+', markedBy: '3', markedAt: '2026-08-15T14:15:00' },
+  { id: 'att-20', studentId: '12', studentName: 'Ananya Verma', batchId: '2', batchName: 'VFX Professional', date: '2026-08-13', status: 'present', topic: 'Showreel Review Session', assignmentSubmitted: true, grade: 'A', markedBy: '3', markedAt: '2026-08-13T14:04:00' },
+  // === Amit Kumar (Batch 5 - Practice/Doubt) ===
+  { id: 'att-21', studentId: '4', studentName: 'Amit Kumar', batchId: '5', batchName: '3D Maya Practice & Doubt Session', date: '2026-08-23', status: 'present', topic: 'Polygon Modeling Doubts', assignmentSubmitted: true, grade: 'A', markedBy: '2', markedAt: '2026-08-23T12:35:00' },
+  { id: 'att-22', studentId: '4', studentName: 'Amit Kumar', batchId: '5', batchName: '3D Maya Practice & Doubt Session', date: '2026-08-19', status: 'present', topic: 'Character Rigging Practice', assignmentSubmitted: true, grade: 'A-', markedBy: '2', markedAt: '2026-08-19T12:33:00' },
+  // === Sneha Gupta (Batch 5 - Practice/Doubt) ===
+  { id: 'att-23', studentId: '5', studentName: 'Sneha Gupta', batchId: '5', batchName: '3D Maya Practice & Doubt Session', date: '2026-08-23', status: 'present', topic: 'Polygon Modeling Doubts', assignmentSubmitted: false, grade: 'B', markedBy: '2', markedAt: '2026-08-23T12:37:00' },
+  { id: 'att-24', studentId: '5', studentName: 'Sneha Gupta', batchId: '5', batchName: '3D Maya Practice & Doubt Session', date: '2026-08-19', status: 'absent', topic: '', assignmentSubmitted: false, grade: '', markedBy: '2', markedAt: '2026-08-19T12:35:00' },
+  // === Sneha Gupta (Batch 3 - Graphic Design) ===
+  { id: 'att-25', studentId: '5', studentName: 'Sneha Gupta', batchId: '3', batchName: 'Graphic Design Masterclass', date: '2026-08-25', status: 'present', topic: 'Figma Design Principles', assignmentSubmitted: true, grade: 'A-', markedBy: '2', markedAt: '2026-08-25T10:03:00' },
+  { id: 'att-26', studentId: '5', studentName: 'Sneha Gupta', batchId: '3', batchName: 'Graphic Design Masterclass', date: '2026-08-22', status: 'present', topic: 'Color Theory Basics', assignmentSubmitted: true, grade: 'B+', markedBy: '2', markedAt: '2026-08-22T10:05:00' },
 ];
 
 export const mockLessonPlans: LessonPlan[] = [
