@@ -204,15 +204,13 @@ export default function CounselorDashboard() {
                 <th className="py-3 px-4 font-semibold">Student ID & Name</th>
                 <th className="py-3 px-4 font-semibold">Course & Admission Date</th>
                 <th className="py-3 px-4 font-semibold">Parent & Contact</th>
-                <th className="py-3 px-4 font-semibold">Status</th>
                 <th className="py-3 px-4 font-semibold">Documents</th>
                 <th className="py-3 px-4 font-semibold text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredAdmissions.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="text-center py-12 text-gray-500">
+                <tr>                    <td colSpan={5} className="text-center py-12 text-gray-500">
                     No admission records found matching your search.
                   </td>
                 </tr>
@@ -232,9 +230,6 @@ export default function CounselorDashboard() {
                     <td className="py-3.5 px-4">
                       <div className="text-gray-800 text-xs font-medium">{student.parentName || 'Parent / Guardian'}</div>
                       <div className="text-xs text-gray-500">{student.parentContact || student.phone}</div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      {getStudentStatusBadge(student.studentStatus)}
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="text-xs text-gray-600">

@@ -359,7 +359,6 @@ export default function BatchesPage() {
                         <th className="py-2.5 px-3">Student Name</th>
                         <th className="py-2.5 px-3">Student ID</th>
                         <th className="py-2.5 px-3">Phone</th>
-                        <th className="py-2.5 px-3">Status</th>
                         <th className="py-2.5 px-3">Assignment Average Grade</th>
                         <th className="py-2.5 px-3">Attendance %</th>
                         <th className="py-2.5 px-3 text-right">Transfer Batch</th>
@@ -371,9 +370,6 @@ export default function BatchesPage() {
                           <td className="py-2 px-3 font-medium text-gray-900">{s.name}</td>
                           <td className="py-2 px-3 text-xs font-mono text-emerald-700">{s.studentId || 'MAAC-STU'}</td>
                           <td className="py-2 px-3 text-xs text-gray-600">{s.phone}</td>
-                          <td className="py-2 px-3">
-                            <Badge variant="success">Active</Badge>
-                          </td>
                           <td className="py-2 px-3">
                             {(() => {
                               const gradeToNum: Record<string, number> = { 'A+': 10, 'A': 9, 'A-': 8, 'B+': 7, 'B': 6, 'B-': 5, 'C+': 4, 'C': 3, 'D': 2, 'F': 1 };
