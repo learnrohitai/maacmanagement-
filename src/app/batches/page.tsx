@@ -360,7 +360,7 @@ export default function BatchesPage() {
                         <th className="py-2.5 px-3">Student ID</th>
                         <th className="py-2.5 px-3">Phone</th>
                         <th className="py-2.5 px-3">Status</th>
-                        <th className="py-2.5 px-3">Average Grade</th>
+                        <th className="py-2.5 px-3">Assignment Average Grade</th>
                         <th className="py-2.5 px-3">Attendance %</th>
                         <th className="py-2.5 px-3 text-right">Transfer Batch</th>
                       </tr>
