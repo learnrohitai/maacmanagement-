@@ -31,6 +31,8 @@ export default function BatchesPage() {
   const { batches, addBatch, updateBatch, deleteBatch, users, currentUser, attendance, changeStudentBatch } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterSchedule, setFilterSchedule] = useState('all');
+  const [filterTeacher, setFilterTeacher] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [viewingBatch, setViewingBatch] = useState<Batch | null>(null);
@@ -83,7 +85,20 @@ export default function BatchesPage() {
       batch.course.toLowerCase().includes(searchTerm.toLowerCase()) ||
       batch.teacherName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || batch.status === filterStatus;
-    return matchesSearch && matchesStatus;
+
+    // Schedule filter: MWF (Mon/Wed/Fri) or TTS (Tue/Thu/Sat)
+    const batchDays = batch.days.map(d => d.toLowerCase());
+    let matchesSchedule = true;
+    if (filterSchedule === 'mwf') {
+      matchesSchedule = batchDays.includes('monday') || batchDays.includes('wednesday') || batchDays.includes('friday');
+    } else if (filterSchedule === 'tts') {
+      matchesSchedule = batchDays.includes('tuesday') || batchDays.includes('thursday') || batchDays.includes('saturday');
+    }
+
+    // Teacher filter
+    const matchesTeacher = filterTeacher === 'all' || batch.teacherId === filterTeacher;
+
+    return matchesSearch && matchesStatus && matchesSchedule && matchesTeacher;
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -211,6 +226,25 @@ export default function BatchesPage() {
               { value: 'active', label: 'Active' },
               { value: 'upcoming', label: 'Upcoming' },
               { value: 'completed', label: 'Completed' }
+            ]}
+            className="w-full md:w-44"
+          />
+          <Select
+            value={filterSchedule}
+            onChange={(e) => setFilterSchedule(e.target.value)}
+            options={[
+              { value: 'all', label: 'All Schedules' },
+              { value: 'mwf', label: 'MWF (Mon/Wed/Fri)' },
+              { value: 'tts', label: 'TTS (Tue/Thu/Sat)' }
+            ]}
+            className="w-full md:w-48"
+          />
+          <Select
+            value={filterTeacher}
+            onChange={(e) => setFilterTeacher(e.target.value)}
+            options={[
+              { value: 'all', label: 'All Teachers' },
+              ...teachers.map(t => ({ value: t.id, label: t.name }))
             ]}
             className="w-full md:w-48"
           />

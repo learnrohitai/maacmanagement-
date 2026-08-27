@@ -324,10 +324,10 @@ export default function AttendancePage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Attendance Status</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">#</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Student</th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Email</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Attendance Status</th>
                     {currentUser?.role === 'teacher' && (
                       <>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Topic Covered</th>
@@ -355,6 +355,11 @@ export default function AttendancePage() {
                         transition={{ delay: index * 0.03 }}
                         className="hover:bg-gray-50 transition-colors"
                       >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge variant={getStatusBadge(status)}>
+                            {status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Not Marked'}
+                          </Badge>
+                        </td>
                         <td className="px-6 py-4 text-sm text-gray-500">{index + 1}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
@@ -368,11 +373,6 @@ export default function AttendancePage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.email}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge variant={getStatusBadge(status)}>
-                            {status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Not Marked'}
-                          </Badge>
-                        </td>
                         {currentUser?.role === 'teacher' && (
                           <>
                             <td className="px-6 py-4 whitespace-nowrap">
