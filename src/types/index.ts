@@ -38,6 +38,15 @@ export interface User {
   documentsSubmitted?: string[];
   remarks?: string;
   waitingForModule?: string;
+  // School / Education Details
+  previousSchool?: string;
+  schoolAddress?: string;
+  schoolCity?: string;
+  schoolBoard?: string;
+  lastClassPassed?: string;
+  // How did you know about MAAC?
+  referralSource?: string;
+  referralDetails?: string;
 }
 
 export interface StudentMaster {

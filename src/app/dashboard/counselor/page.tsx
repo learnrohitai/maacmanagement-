@@ -311,6 +311,47 @@ export default function CounselorDashboard() {
               </div>
             </div>
 
+            {/* School / Education Details */}
+            <div className="p-4 bg-indigo-50/60 rounded-xl border border-indigo-100">
+              <p className="text-xs font-bold text-indigo-700 mb-2 uppercase">School / Previous Education</p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span className="text-gray-500">School: </span>
+                  <strong className="text-gray-800">{selectedStudentDetail.previousSchool || 'N/A'}</strong>
+                </div>
+                <div>
+                  <span className="text-gray-500">City: </span>
+                  <strong className="text-gray-800">{selectedStudentDetail.schoolCity || 'N/A'}</strong>
+                </div>
+                <div>
+                  <span className="text-gray-500">Board: </span>
+                  <strong className="text-gray-800">{selectedStudentDetail.schoolBoard || 'N/A'}</strong>
+                </div>
+                <div>
+                  <span className="text-gray-500">Last Class: </span>
+                  <strong className="text-gray-800">{selectedStudentDetail.lastClassPassed || 'N/A'}</strong>
+                </div>
+                {selectedStudentDetail.schoolAddress && (
+                  <div className="col-span-2">
+                    <span className="text-gray-500">Address: </span>
+                    <strong className="text-gray-800">{selectedStudentDetail.schoolAddress}</strong>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* How did you know about MAAC? */}
+            <div className="p-4 bg-rose-50/60 rounded-xl border border-rose-100">
+              <p className="text-xs font-bold text-rose-700 mb-2 uppercase">How did you know about MAAC?</p>
+              <div className="text-xs">
+                <span className="text-gray-500">Source: </span>
+                <strong className="text-gray-800">{selectedStudentDetail.referralSource || 'Not recorded'}</strong>
+                {selectedStudentDetail.referralDetails && (
+                  <p className="text-gray-600 mt-1 italic">{selectedStudentDetail.referralDetails}</p>
+                )}
+              </div>
+            </div>
+
             <div>
               <p className="text-xs font-bold text-gray-600 mb-1.5 uppercase">Counselor Remarks</p>
               <p className="text-xs text-gray-700 bg-gray-50 p-3 rounded-xl italic">

@@ -27,7 +27,8 @@ import {
   DollarSign,
   Layers,
   HeartHandshake,
-  Image as ImageIcon
+  Image as ImageIcon,
+  BookOpen
 } from 'lucide-react';
 import { User as UserType, StudentStatus, PaymentStatus } from '@/types';
 
@@ -109,7 +110,7 @@ export default function NewAdmissionPage() {
     counselorName: currentUser?.name || 'Priya Sharma',
     counselorId: currentUser?.id || '8',
     totalFees: 145000,
-    feesPaid: 35000,
+    feesPaid: 0,
     paymentMethod: 'UPI / Card',
     feesDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     profilePhoto: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
@@ -120,7 +121,16 @@ export default function NewAdmissionPage() {
       'Signed Admission Rules Form'
     ],
     waitingForModule: 'Module 1: Fundamentals & Computer Graphics',
-    remarks: 'Student enrolled via Counselor Desk. Forwarded for Academic Manager batch scheduling.'
+    remarks: 'Student enrolled via Counselor Desk. Forwarded for Academic Manager batch scheduling.',
+    // School / Education Details
+    previousSchool: '',
+    schoolAddress: '',
+    schoolCity: '',
+    schoolBoard: 'CBSE',
+    lastClassPassed: '12th',
+    // How did you know about MAAC?
+    referralSource: '',
+    referralDetails: ''
   });
 
   const handleSelectCourse = (courseId: string) => {
@@ -185,7 +195,16 @@ export default function NewAdmissionPage() {
       studentStatus: 'Waiting for Batch' as StudentStatus,
       documentsSubmitted: formData.documentsSubmitted,
       remarks: formData.remarks,
-      waitingForModule: formData.waitingForModule
+      waitingForModule: formData.waitingForModule,
+      // School / Education Details
+      previousSchool: formData.previousSchool,
+      schoolAddress: formData.schoolAddress,
+      schoolCity: formData.schoolCity,
+      schoolBoard: formData.schoolBoard,
+      lastClassPassed: formData.lastClassPassed,
+      // How did you know about MAAC?
+      referralSource: formData.referralSource,
+      referralDetails: formData.referralDetails
     };
 
     addStudent(newStudent);
@@ -401,6 +420,73 @@ export default function NewAdmissionPage() {
             </div>
           </Card>
 
+          {/* SECTION 2B: School / Previous Education Details */}
+          <Card className="p-6 md:p-8 space-y-6 shadow-md border-gray-100">
+            <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                <BookOpen className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">2B. School / Previous Education Details</h3>
+                <p className="text-xs text-gray-500">Academic background and previous school information</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <Input
+                label="Previous School / College Name"
+                placeholder="e.g. St. Xavier's High School"
+                value={formData.previousSchool}
+                onChange={(e) => setFormData({ ...formData, previousSchool: e.target.value })}
+              />
+              <Input
+                label="School Address / City"
+                placeholder="e.g. Andheri West, Mumbai"
+                value={formData.schoolAddress}
+                onChange={(e) => setFormData({ ...formData, schoolAddress: e.target.value })}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <Input
+                label="School City"
+                placeholder="e.g. Mumbai"
+                value={formData.schoolCity}
+                onChange={(e) => setFormData({ ...formData, schoolCity: e.target.value })}
+              />
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Board / Affiliation</label>
+                <select
+                  value={formData.schoolBoard}
+                  onChange={(e) => setFormData({ ...formData, schoolBoard: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-200 outline-none text-sm text-gray-900"
+                >
+                  <option value="CBSE">CBSE</option>
+                  <option value="ICSE">ICSE</option>
+                  <option value="State Board">State Board</option>
+                  <option value="IB">IB (International Baccalaureate)</option>
+                  <option value="NIOS">NIOS</option>
+                  <option value="University">University / College</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Last Class Passed</label>
+                <select
+                  value={formData.lastClassPassed}
+                  onChange={(e) => setFormData({ ...formData, lastClassPassed: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-200 outline-none text-sm text-gray-900"
+                >
+                  <option value="10th">10th Standard</option>
+                  <option value="12th">12th Standard / HSC</option>
+                  <option value="Graduation">Graduation / Degree</option>
+                  <option value="Post-Graduation">Post-Graduation</option>
+                  <option value="Dropped">Dropped Out</option>
+                </select>
+              </div>
+            </div>
+          </Card>
+
           {/* SECTION 3: Academic Program Selection */}
           <Card className="p-6 md:p-8 space-y-6 shadow-md border-gray-100">
             <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
@@ -491,19 +577,12 @@ export default function NewAdmissionPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <Input
                 label="Total Course Fee (INR) *"
                 type="number"
                 value={formData.totalFees.toString()}
                 onChange={(e) => setFormData({ ...formData, totalFees: Number(e.target.value) })}
-                required
-              />
-              <Input
-                label="Initial Token / Fee Paid (INR) *"
-                type="number"
-                value={formData.feesPaid.toString()}
-                onChange={(e) => setFormData({ ...formData, feesPaid: Number(e.target.value) })}
                 required
               />
               <div>
@@ -528,32 +607,6 @@ export default function NewAdmissionPage() {
                 value={formData.feesDueDate}
                 onChange={(e) => setFormData({ ...formData, feesDueDate: e.target.value })}
               />
-
-              {/* Dynamic Fee Calculation Card */}
-              <div className="p-4 rounded-2xl bg-gray-50 border border-gray-200 flex flex-col justify-between">
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-gray-500">Fee Payment Progress ({paymentPercent}%)</span>
-                  <span className={`font-bold px-2 py-0.5 rounded-md ${
-                    paymentStatus === 'Paid'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : paymentStatus === 'Partial'
-                      ? 'bg-amber-100 text-amber-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {paymentStatus}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 my-2 overflow-hidden">
-                  <div
-                    className="bg-gradient-to-r from-emerald-500 to-teal-500 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${paymentPercent}%` }}
-                  />
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-600">Paid: <strong>₹{feesPaidNumber.toLocaleString()}</strong></span>
-                  <span className="text-gray-600">Balance: <strong className="text-red-700">₹{balanceAmount.toLocaleString()}</strong></span>
-                </div>
-              </div>
             </div>
           </Card>
 
@@ -606,6 +659,50 @@ export default function NewAdmissionPage() {
                 placeholder="Any special batch timing preferences, previous experience, or fee terms..."
                 className="w-full px-4 py-3 rounded-2xl border border-gray-200 focus:ring-2 focus:ring-emerald-500 outline-none text-sm text-gray-900 bg-white"
               />
+            </div>
+
+            {/* SECTION 5B: How did you know about MAAC? */}
+            <div className="border-t border-gray-100 pt-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-gray-900">How did you know about MAAC?</h4>
+                  <p className="text-xs text-gray-500">Referral source tracking for marketing analytics</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">Referral Source *</label>
+                  <select
+                    value={formData.referralSource}
+                    onChange={(e) => setFormData({ ...formData, referralSource: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-rose-200 outline-none text-sm text-gray-900"
+                    required
+                  >
+                    <option value="">-- Select Source --</option>
+                    <option value="Website">MAAC Website</option>
+                    <option value="Social Media">Social Media (Instagram / Facebook / YouTube)</option>
+                    <option value="Walk-in">Walk-in / Direct Visit</option>
+                    <option value="Friend / Family Referral">Friend / Family Referral</option>
+                    <option value="Existing Student Referral">Existing Student Referral</option>
+                    <option value="Newspaper / Print Ad">Newspaper / Print Advertisement</option>
+                    <option value="TV / Radio Ad">TV / Radio Advertisement</option>
+                    <option value="Education Fair / Seminar">Education Fair / Seminar / Workshop</option>
+                    <option value="Google Search">Google Search</option>
+                    <option value="Phone Inquiry">Phone Inquiry / Helpline</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <Input
+                  label="Referral Details (Optional)"
+                  placeholder="e.g. Referred by friend Rahul, saw ad on Instagram"
+                  value={formData.referralDetails}
+                  onChange={(e) => setFormData({ ...formData, referralDetails: e.target.value })}
+                />
+              </div>
             </div>
 
             {/* Clear Academic Manager Handover Notice */}
@@ -663,14 +760,6 @@ export default function NewAdmissionPage() {
                 <div className="flex justify-between">
                   <span className="text-gray-500">Course Fee:</span>
                   <span className="font-mono font-bold text-gray-900">₹{totalFeeNumber.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Token Paid:</span>
-                  <span className="font-mono font-bold text-emerald-700">₹{feesPaidNumber.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Balance:</span>
-                  <span className="font-mono font-bold text-red-600">₹{balanceAmount.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Documents:</span>
