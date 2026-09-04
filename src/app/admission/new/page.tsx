@@ -11,26 +11,16 @@ import { Badge } from '@/components/ui/Table';
 import {
   GraduationCap,
   User,
-  Phone,
-  Mail,
-  Calendar,
-  CreditCard,
   CheckCircle2,
-  AlertCircle,
   Clock,
   ArrowLeft,
   Sparkles,
   ShieldCheck,
   Check,
-  MapPin,
-  FileCheck,
-  DollarSign,
-  Layers,
   HeartHandshake,
-  Image as ImageIcon,
   BookOpen
 } from 'lucide-react';
-import { User as UserType, StudentStatus, PaymentStatus } from '@/types';
+import { User as UserType, StudentStatus } from '@/types';
 
 const COURSES = [
   {
@@ -38,7 +28,6 @@ const COURSES = [
     name: '3D Animation Film Making',
     badge: 'ADVFX+ / Maya',
     duration: '24 Months',
-    fee: 145000,
     color: 'from-purple-500 to-indigo-600'
   },
   {
@@ -46,7 +35,6 @@ const COURSES = [
     name: 'VFX & Compositing Professional',
     badge: 'Nuke / Houdini',
     duration: '18 Months',
-    fee: 135000,
     color: 'from-cyan-500 to-blue-600'
   },
   {
@@ -54,7 +42,6 @@ const COURSES = [
     name: 'Game Art, Design & Unreal Engine',
     badge: 'Unreal / Unity',
     duration: '18 Months',
-    fee: 140000,
     color: 'from-emerald-500 to-teal-600'
   },
   {
@@ -62,7 +49,6 @@ const COURSES = [
     name: 'Graphic Design & UI/UX Master',
     badge: 'Figma / Adobe Suite',
     duration: '12 Months',
-    fee: 85000,
     color: 'from-pink-500 to-rose-600'
   },
   {
@@ -70,7 +56,6 @@ const COURSES = [
     name: 'Motion Graphics & Broadcast Design',
     badge: 'After Effects / Cinema 4D',
     duration: '12 Months',
-    fee: 90000,
     color: 'from-amber-500 to-orange-600'
   }
 ];
@@ -109,10 +94,7 @@ export default function NewAdmissionPage() {
     admissionDate: new Date().toISOString().split('T')[0],
     counselorName: currentUser?.name || 'Priya Sharma',
     counselorId: currentUser?.id || '8',
-    totalFees: 145000,
-    feesPaid: 0,
-    paymentMethod: 'UPI / Card',
-    feesDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+
     profilePhoto: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
     documentsSubmitted: [
       '10th Marksheet',
@@ -134,11 +116,9 @@ export default function NewAdmissionPage() {
   });
 
   const handleSelectCourse = (courseId: string) => {
-    const selected = COURSES.find(c => c.id === courseId);
     setFormData(prev => ({
       ...prev,
-      course: courseId,
-      totalFees: selected ? selected.fee : prev.totalFees
+      course: courseId
     }));
   };
 
@@ -153,18 +133,6 @@ export default function NewAdmissionPage() {
       };
     });
   };
-
-  const calculatePaymentStatus = (total: number, paid: number): PaymentStatus => {
-    if (paid >= total && total > 0) return 'Paid';
-    if (paid > 0) return 'Partial';
-    return 'Pending';
-  };
-
-  const totalFeeNumber = Number(formData.totalFees) || 0;
-  const feesPaidNumber = Number(formData.feesPaid) || 0;
-  const balanceAmount = Math.max(0, totalFeeNumber - feesPaidNumber);
-  const paymentStatus = calculatePaymentStatus(totalFeeNumber, feesPaidNumber);
-  const paymentPercent = totalFeeNumber > 0 ? Math.min(100, Math.round((feesPaidNumber / totalFeeNumber) * 100)) : 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -188,10 +156,7 @@ export default function NewAdmissionPage() {
       counselorName: formData.counselorName,
       counselorId: formData.counselorId,
       assignedBatches: [], // Strictly handed off to Academic Manager
-      feesDueDate: formData.feesDueDate,
-      totalFees: totalFeeNumber,
-      feesPaid: feesPaidNumber,
-      paymentStatus: paymentStatus,
+
       studentStatus: 'Waiting for Batch' as StudentStatus,
       documentsSubmitted: formData.documentsSubmitted,
       remarks: formData.remarks,
@@ -533,7 +498,7 @@ export default function NewAdmissionPage() {
                       </div>
                       <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
                         <span>Duration: <strong>{c.duration}</strong></span>
-                        <span className="font-bold text-gray-900 font-mono">₹{c.fee.toLocaleString()}</span>
+                        <span className="font-bold text-gray-900 font-mono">{c.duration}</span>
                       </div>
                     </div>
                   );
@@ -565,50 +530,7 @@ export default function NewAdmissionPage() {
             </div>
           </Card>
 
-          {/* SECTION 4: Fee Ledger & Payment Tokens */}
-          <Card className="p-6 md:p-8 space-y-6 shadow-md border-gray-100">
-            <div className="flex items-center gap-3 border-b border-gray-100 pb-4">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-                <CreditCard className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">4. Fee Structure & Token Payment</h3>
-                <p className="text-xs text-gray-500">Record total course fee, initial payment token, and installment due date</p>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <Input
-                label="Total Course Fee (INR) *"
-                type="number"
-                value={formData.totalFees.toString()}
-                onChange={(e) => setFormData({ ...formData, totalFees: Number(e.target.value) })}
-                required
-              />
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Payment Mode *</label>
-                <select
-                  value={formData.paymentMethod}
-                  onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-amber-200 outline-none text-sm text-gray-900"
-                >
-                  <option value="UPI / Card">UPI / Debit Card / GPay</option>
-                  <option value="Net Banking">Net Banking / NEFT / IMPS</option>
-                  <option value="Cheque">Bank Cheque</option>
-                  <option value="Cash">Cash Receipt</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <Input
-                label="Next Installment Due Date"
-                type="date"
-                value={formData.feesDueDate}
-                onChange={(e) => setFormData({ ...formData, feesDueDate: e.target.value })}
-              />
-            </div>
-          </Card>
 
           {/* SECTION 5: Documents Submitted & Remarks */}
           <Card className="p-6 md:p-8 space-y-6 shadow-md border-gray-100">
@@ -757,10 +679,7 @@ export default function NewAdmissionPage() {
                   <span className="text-gray-500">Parent:</span>
                   <span className="font-semibold text-gray-800">{formData.parentName || 'Parent Name'}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Course Fee:</span>
-                  <span className="font-mono font-bold text-gray-900">₹{totalFeeNumber.toLocaleString()}</span>
-                </div>
+
                 <div className="flex justify-between">
                   <span className="text-gray-500">Documents:</span>
                   <span className="font-semibold text-emerald-700">{formData.documentsSubmitted.length} Verified ✓</span>
@@ -796,7 +715,7 @@ export default function NewAdmissionPage() {
                 Institute Admission Policy
               </p>
               <p className="text-[11px] text-purple-800 leading-relaxed">
-                Admissions recorded through this portal generate an immutable master profile and initial fee ledger receipt. Batch allocation is scheduled by the Academic Dean.
+                Admissions recorded through this portal generate an immutable master profile. Batch allocation is scheduled by the Academic Dean.
               </p>
             </div>
           </div>

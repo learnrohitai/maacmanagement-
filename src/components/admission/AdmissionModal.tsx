@@ -13,7 +13,6 @@ import {
   Phone,
   Mail,
   Calendar,
-  CreditCard,
   CheckCircle2,
   AlertCircle,
   Clock,
@@ -23,7 +22,7 @@ import {
   ShieldCheck,
   Check
 } from 'lucide-react';
-import { User as UserType, StudentStatus, PaymentStatus } from '@/types';
+import { User as UserType, StudentStatus } from '@/types';
 
 interface AdmissionModalProps {
   isOpen: boolean;
@@ -73,9 +72,6 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
     admissionDate: new Date().toISOString().split('T')[0],
     counselorName: currentUser?.name || 'Priya Sharma',
     counselorId: currentUser?.id || '8',
-    feesDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    totalFees: 120000,
-    feesPaid: 35000,
     profilePhoto: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
     documentsSubmitted: [
       '10th Marksheet',
@@ -99,27 +95,14 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
     });
   };
 
-  const calculatePaymentStatus = (total: number, paid: number): PaymentStatus => {
-    if (paid >= total && total > 0) return 'Paid';
-    if (paid > 0) return 'Partial';
-    return 'Pending';
-  };
-
-  const balanceAmount = Math.max(0, Number(formData.totalFees) - Number(formData.feesPaid));
-  const paymentStatus = calculatePaymentStatus(Number(formData.totalFees), Number(formData.feesPaid));
-
   const validateStep1 = () => {
     return formData.fullName.trim() !== '' && formData.contactNo.trim() !== '' && formData.email.trim() !== '';
-  };
-
-  const validateStep2 = () => {
-    return Number(formData.totalFees) > 0 && Number(formData.feesPaid) >= 0;
   };
 
   const handleNext = () => {
     if (currentStep === 1 && validateStep1()) {
       setCurrentStep(2);
-    } else if (currentStep === 2 && validateStep2()) {
+    } else if (currentStep === 2) {
       setCurrentStep(3);
     }
   };
@@ -151,10 +134,7 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
       counselorName: formData.counselorName,
       counselorId: formData.counselorId,
       assignedBatches: [], // Handed over to Academic Manager
-      feesDueDate: formData.feesDueDate,
-      totalFees: Number(formData.totalFees),
-      feesPaid: Number(formData.feesPaid),
-      paymentStatus: paymentStatus,
+
       studentStatus: 'Waiting for Batch' as StudentStatus,
       documentsSubmitted: formData.documentsSubmitted,
       remarks: formData.remarks,
@@ -221,8 +201,8 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
                 {currentStep > 2 ? <Check className="w-4 h-4" /> : '2'}
               </div>
               <div className="hidden sm:block">
-                <p className="text-xs font-semibold text-white">Program & Fees</p>
-                <p className="text-[10px] text-slate-400">Course & initial token</p>
+                <p className="text-xs font-semibold text-white">Program Details</p>
+                <p className="text-[10px] text-slate-400">Course selection</p>
               </div>
             </button>
 
@@ -231,7 +211,7 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
             {/* Step 3 */}
             <button
               type="button"
-              onClick={() => validateStep1() && validateStep2() && setCurrentStep(3)}
+              onClick={() => validateStep1() && setCurrentStep(3)}
               className="flex items-center gap-2.5 text-left focus:outline-none"
             >
               <div
@@ -351,10 +331,10 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
                     <div>
                       <h4 className="text-base font-bold text-gray-900 flex items-center gap-2">
                         <GraduationCap className="w-5 h-5 text-emerald-600" />
-                        Program & Fee Structure
+                        Program Selection
                       </h4>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Select the enrolled specialization program and record initial token amount.
+                        Select the enrolled specialization program.
                       </p>
                     </div>
                   </div>
@@ -391,54 +371,6 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
                           </div>
                         );
                       })}
-                    </div>
-                  </div>
-
-                  {/* Fee Inputs */}
-                  <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Input
-                        label="Total Course Fee (INR) *"
-                        type="number"
-                        value={formData.totalFees.toString()}
-                        onChange={(e) => setFormData({ ...formData, totalFees: Number(e.target.value) })}
-                        required
-                      />
-                      <Input
-                        label="Initial Fee / Token Paid (INR) *"
-                        type="number"
-                        value={formData.feesPaid.toString()}
-                        onChange={(e) => setFormData({ ...formData, feesPaid: Number(e.target.value) })}
-                        required
-                      />
-                      <Input
-                        label="Next Installment Due Date"
-                        type="date"
-                        value={formData.feesDueDate}
-                        onChange={(e) => setFormData({ ...formData, feesDueDate: e.target.value })}
-                      />
-                    </div>
-
-                    {/* Live Balance Summary */}
-                    <div className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-200 text-xs">
-                      <div>
-                        <span className="text-gray-500">Payment Status: </span>
-                        <span
-                          className={`font-bold px-2.5 py-0.5 rounded-md ${
-                            paymentStatus === 'Paid'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : paymentStatus === 'Partial'
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {paymentStatus}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">Remaining Balance: </span>
-                        <strong className="text-gray-900 font-mono text-sm">₹{balanceAmount.toLocaleString()}</strong>
-                      </div>
                     </div>
                   </div>
 
@@ -580,7 +512,7 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
                     onClick={handleNext}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-6 py-2.5 shadow-md font-semibold"
                   >
-                    Continue to {currentStep === 1 ? 'Program & Fees' : 'Verification'}
+                    Continue to {currentStep === 1 ? 'Program Details' : 'Verification'}
                     <ArrowRight className="w-4 h-4 ml-1.5" />
                   </Button>
                 ) : (
