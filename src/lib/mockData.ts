@@ -1037,8 +1037,8 @@ export const courseOptions = [
   'VFX',
   'Graphic Design',
   'Motion Graphics',
-  'Web Design',
-  'Game Design'
+  'Game Design',
+  'Last Batch'
 ];
 
 export const timeSlots = [
