@@ -22,7 +22,8 @@ import {
   Sparkles,
   HelpCircle,
   RefreshCw,
-  ArrowRight
+  ArrowRight,
+  CheckCircle2
 } from 'lucide-react';
 import { courseOptions, weekDays } from '@/lib/mockData';
 import { Batch, User as UserType } from '@/types';
@@ -36,6 +37,10 @@ export default function BatchesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [viewingBatch, setViewingBatch] = useState<Batch | null>(null);
+  const [createStep, setCreateStep] = useState<1 | 2>(1);
+  const [newlyCreatedBatch, setNewlyCreatedBatch] = useState<Batch | null>(null);
+  const [searchStudentTerm, setSearchStudentTerm] = useState('');
+  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
 
   // Transfer Modal State
   const [studentForTransfer, setStudentForTransfer] = useState<{
@@ -101,7 +106,7 @@ export default function BatchesPage() {
     return matchesSearch && matchesStatus && matchesSchedule && matchesTeacher;
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmitStep1 = (e: React.FormEvent) => {
     e.preventDefault();
     const teacher = teachers.find(t => t.id === formData.teacherId);
     if (editingBatch) {
@@ -109,19 +114,65 @@ export default function BatchesPage() {
         ...formData,
         teacherName: teacher?.name || ''
       });
-    } else {
-      addBatch({
-        id: Date.now().toString(),
-        ...formData,
-        teacherName: teacher?.name || '',
-        enrolledStudents: 0,
-        studentIds: [],
-        status: 'upcoming'
-      });
+      setIsModalOpen(false);
+      setEditingBatch(null);
+      resetForm();
+      return;
     }
-    setIsModalOpen(false);
-    setEditingBatch(null);
-    resetForm();
+    const newBatch: Batch = {
+      id: Date.now().toString(),
+      ...formData,
+      teacherName: teacher?.name || '',
+      enrolledStudents: 0,
+      studentIds: [],
+      status: 'upcoming'
+    };
+    addBatch(newBatch);
+    setNewlyCreatedBatch(newBatch);
+    setCreateStep(2);
+  };
+
+  const handleAddStudentsToBatch = () => {
+    if (!newlyCreatedBatch) return;
+    const allStudents = users.filter(u => u.role === 'student');
+    const filtered = searchStudentTerm
+      ? allStudents.filter(s =>
+          s.name.toLowerCase().includes(searchStudentTerm.toLowerCase()) ||
+          (s.studentId && s.studentId.toLowerCase().includes(searchStudentTerm.toLowerCase())) ||
+          (s.course && s.course.toLowerCase().includes(searchStudentTerm.toLowerCase()))
+        )
+      : allStudents;
+    const alreadyEnrolled = new Set(newlyCreatedBatch.studentIds);
+    const toAdd = Array.from(selectedStudents).filter(id => !alreadyEnrolled.has(id));
+    const updatedStudentIds = [...newlyCreatedBatch.studentIds, ...toAdd];
+    updateBatch(newlyCreatedBatch.id, {
+      studentIds: updatedStudentIds,
+      enrolledStudents: updatedStudentIds.length
+    });
+    setCreateStep(1);
+    setSelectedStudents(new Set());
+    setSearchStudentTerm('');
+    setNewlyCreatedBatch(null);
+  };
+
+  const toggleSelectStudent = (studentId: string) => {
+    setSelectedStudents(prev => {
+      const next = new Set(prev);
+      if (next.has(studentId)) next.delete(studentId);
+      else next.add(studentId);
+      return next;
+    });
+  };
+
+  const handleCancelCreate = () => {
+    if (newlyCreatedBatch && createStep === 2) {
+      // Roll back the batch if user cancels after creation
+      deleteBatch(newlyCreatedBatch.id);
+      setNewlyCreatedBatch(null);
+    }
+    setCreateStep(1);
+    setSelectedStudents(new Set());
+    setSearchStudentTerm('');
   };
 
   const resetForm = () => {
@@ -141,6 +192,10 @@ export default function BatchesPage() {
       classesRemaining: 30,
       isPracticeDoubtClass: false
     });
+    setCreateStep(1);
+    setNewlyCreatedBatch(null);
+    setSelectedStudents(new Set());
+    setSearchStudentTerm('');
   };
 
   const openEditModal = (batch: Batch) => {
@@ -161,6 +216,7 @@ export default function BatchesPage() {
       classesRemaining: batch.classesRemaining || 30,
       isPracticeDoubtClass: !!batch.isPracticeDoubtClass
     });
+    setCreateStep(1);
     setIsModalOpen(true);
   };
 
@@ -554,150 +610,455 @@ export default function BatchesPage() {
       {/* Create/Edit Batch Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => { setIsModalOpen(false); setEditingBatch(null); }}
-        title={editingBatch ? 'Edit Batch Configuration' : 'Create New Batch & Schedule'}
+        onClose={() => {
+          if (newlyCreatedBatch && createStep === 2) {
+            deleteBatch(newlyCreatedBatch.id);
+            setNewlyCreatedBatch(null);
+          }
+          setIsModalOpen(false);
+          setEditingBatch(null);
+          setCreateStep(1);
+        }}
+        title={editingBatch ? 'Edit Batch Configuration' : createStep === 2 ? `Add Students — ${newlyCreatedBatch?.name}` : 'Create New Batch & Schedule'}
         size="lg"
       >
-        <form onSubmit={handleSubmit} className="space-y-5 max-h-[75vh] overflow-y-auto pr-1">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Batch Code ID *"
-              value={formData.batchIdCode}
-              onChange={(e) => setFormData({ ...formData, batchIdCode: e.target.value })}
-              placeholder="e.g. MAAC-ANI-01"
-              required
-            />
-            <Input
-              label="Batch Name *"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g. Animation Premium"
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Select
-              label="Course Program *"
-              value={formData.course}
-              onChange={(e) => setFormData({ ...formData, course: e.target.value })}
-              options={[
-                { value: '', label: 'Select Course' },
-                ...courseOptions.map(c => ({ value: c, label: c }))
-              ]}
-              required
-            />
-            <Select
-              label="Faculty / Teacher *"
-              value={formData.teacherId}
-              onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
-              options={[
-                { value: '', label: 'Select Teacher' },
-                ...teachers.map(t => ({ value: t.id, label: t.name }))
-              ]}
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Input
-              label="Room / Lab *"
-              value={formData.room}
-              onChange={(e) => setFormData({ ...formData, room: e.target.value })}
-              placeholder="e.g. Lab 1 - Maya Studio"
-              required
-            />
-            <Input
-              label="Start Time *"
-              type="time"
-              value={formData.startTime}
-              onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-              required
-            />
-            <Input
-              label="End Time *"
-              type="time"
-              value={formData.endTime}
-              onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Schedule Days *</label>
-            <div className="flex flex-wrap gap-2">
-              {weekDays.map(day => (
-                <button
-                  key={day}
-                  type="button"
-                  onClick={() => toggleDay(day)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                    formData.days.includes(day)
-                      ? 'bg-purple-600 text-white shadow-sm'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {day.slice(0, 3)}
-                </button>
-              ))}
+        {editingBatch ? (
+          /* ===== EDIT MODE ===== */
+          <form onSubmit={(e) => { e.preventDefault(); handleSubmitStep1(e); }} className="space-y-5 max-h-[75vh] overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Batch Code ID *"
+                value={formData.batchIdCode}
+                onChange={(e) => setFormData({ ...formData, batchIdCode: e.target.value })}
+                placeholder="e.g. MAAC-ANI-01"
+                required
+              />
+              <Input
+                label="Batch Name *"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. Animation Premium"
+                required
+              />
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Input
-              label="Classes Completed"
-              type="number"
-              value={formData.classesCompleted.toString()}
-              onChange={(e) => setFormData({ ...formData, classesCompleted: parseInt(e.target.value) || 0 })}
-            />
-            <Input
-              label="Classes Remaining"
-              type="number"
-              value={formData.classesRemaining.toString()}
-              onChange={(e) => setFormData({ ...formData, classesRemaining: parseInt(e.target.value) || 0 })}
-            />
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Select
+                label="Course Program *"
+                value={formData.course}
+                onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                options={[
+                  { value: '', label: 'Select Course' },
+                  ...courseOptions.map(c => ({ value: c, label: c }))
+                ]}
+                required
+              />
+              <Select
+                label="Faculty / Teacher *"
+                value={formData.teacherId}
+                onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
+                options={[
+                  { value: '', label: 'Select Teacher' },
+                  ...teachers.map(t => ({ value: t.id, label: t.name }))
+                ]}
+                required
+              />
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Start Date *"
-              type="date"
-              value={formData.startDate}
-              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-              required
-            />
-            <Input
-              label="Expected End Date *"
-              type="date"
-              value={formData.endDate}
-              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-              required
-            />
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input
+                label="Room / Lab *"
+                value={formData.room}
+                onChange={(e) => setFormData({ ...formData, room: e.target.value })}
+                placeholder="e.g. Lab 1 - Maya Studio"
+                required
+              />
+              <Input
+                label="Start Time *"
+                type="time"
+                value={formData.startTime}
+                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                required
+              />
+              <Input
+                label="End Time *"
+                type="time"
+                value={formData.endTime}
+                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                required
+              />
+            </div>
 
-          {/* Section 3: Practice / Doubt Class Option */}
-          <div className="p-3.5 rounded-xl border border-cyan-200 bg-cyan-50/50 flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-cyan-950">Practice / Doubt Class Option</p>
-              <p className="text-xs text-cyan-700">Mark this batch as dedicated lab practice or doubt resolution session</p>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Schedule Days *</label>
+              <div className="flex flex-wrap gap-2">
+                {weekDays.map(day => (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => toggleDay(day)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      formData.days.includes(day)
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {day.slice(0, 3)}
+                  </button>
+                ))}
+              </div>
             </div>
-            <input
-              type="checkbox"
-              checked={formData.isPracticeDoubtClass}
-              onChange={(e) => setFormData({ ...formData, isPracticeDoubtClass: e.target.checked })}
-              className="w-5 h-5 rounded text-cyan-600 focus:ring-cyan-500 cursor-pointer"
-            />
-          </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-            <Button variant="ghost" type="button" onClick={() => { setIsModalOpen(false); setEditingBatch(null); }}>
-              Cancel
-            </Button>
-            <Button type="submit">
-              {editingBatch ? 'Update Batch' : 'Create Batch'}
-            </Button>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input
+                label="Classes Completed"
+                type="number"
+                value={formData.classesCompleted.toString()}
+                onChange={(e) => setFormData({ ...formData, classesCompleted: parseInt(e.target.value) || 0 })}
+              />
+              <Input
+                label="Classes Remaining"
+                type="number"
+                value={formData.classesRemaining.toString()}
+                onChange={(e) => setFormData({ ...formData, classesRemaining: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Start Date *"
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                required
+              />
+              <Input
+                label="Expected End Date *"
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="p-3.5 rounded-xl border border-cyan-200 bg-cyan-50/50 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-cyan-950">Practice / Doubt Class Option</p>
+                <p className="text-xs text-cyan-700">Mark this batch as dedicated lab practice or doubt resolution session</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={formData.isPracticeDoubtClass}
+                onChange={(e) => setFormData({ ...formData, isPracticeDoubtClass: e.target.checked })}
+                className="w-5 h-5 rounded text-cyan-600 focus:ring-cyan-500 cursor-pointer"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <Button variant="ghost" type="button" onClick={() => { setIsModalOpen(false); setEditingBatch(null); }}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                Update Batch
+              </Button>
+            </div>
+          </form>
+        ) : createStep === 1 ? (
+          /* ===== CREATE STEP 1: Batch Details ===== */
+          <form onSubmit={handleSubmitStep1} className="space-y-5 max-h-[75vh] overflow-y-auto pr-1">
+            <div className="flex items-center gap-3 p-4 bg-purple-50 rounded-xl mb-2">
+              <div className="flex items-center gap-1">
+                <div className="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-sm font-bold">1</div>
+                <div className="h-0.5 flex-1 bg-purple-200" />
+              </div>
+              <div className="flex items-center gap-1 ml-3">
+                <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">2</div>
+                <div className="h-0.5 flex-1 bg-gray-200" />
+              </div>
+              <span className="ml-auto text-xs text-gray-500">Step 1: Batch Details &rarr; Step 2: Add Students</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Batch Code ID *"
+                value={formData.batchIdCode}
+                onChange={(e) => setFormData({ ...formData, batchIdCode: e.target.value })}
+                placeholder="e.g. MAAC-ANI-01"
+                required
+              />
+              <Input
+                label="Batch Name *"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. Animation Premium"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Select
+                label="Course Program *"
+                value={formData.course}
+                onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                options={[
+                  { value: '', label: 'Select Course' },
+                  ...courseOptions.map(c => ({ value: c, label: c }))
+                ]}
+                required
+              />
+              <Select
+                label="Faculty / Teacher *"
+                value={formData.teacherId}
+                onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
+                options={[
+                  { value: '', label: 'Select Teacher' },
+                  ...teachers.map(t => ({ value: t.id, label: t.name }))
+                ]}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input
+                label="Room / Lab *"
+                value={formData.room}
+                onChange={(e) => setFormData({ ...formData, room: e.target.value })}
+                placeholder="e.g. Lab 1 - Maya Studio"
+                required
+              />
+              <Input
+                label="Start Time *"
+                type="time"
+                value={formData.startTime}
+                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                required
+              />
+              <Input
+                label="End Time *"
+                type="time"
+                value={formData.endTime}
+                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Schedule Days *</label>
+              <div className="flex flex-wrap gap-2">
+                {weekDays.map(day => (
+                  <button
+                    key={day}
+                    type="button"
+                    onClick={() => toggleDay(day)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      formData.days.includes(day)
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {day.slice(0, 3)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input
+                label="Classes Completed"
+                type="number"
+                value={formData.classesCompleted.toString()}
+                onChange={(e) => setFormData({ ...formData, classesCompleted: parseInt(e.target.value) || 0 })}
+              />
+              <Input
+                label="Classes Remaining"
+                type="number"
+                value={formData.classesRemaining.toString()}
+                onChange={(e) => setFormData({ ...formData, classesRemaining: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Start Date *"
+                type="date"
+                value={formData.startDate}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                required
+              />
+              <Input
+                label="Expected End Date *"
+                type="date"
+                value={formData.endDate}
+                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="p-3.5 rounded-xl border border-cyan-200 bg-cyan-50/50 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-semibold text-cyan-950">Practice / Doubt Class Option</p>
+                <p className="text-xs text-cyan-700">Mark this batch as dedicated lab practice or doubt resolution session</p>
+              </div>
+              <input
+                type="checkbox"
+                checked={formData.isPracticeDoubtClass}
+                onChange={(e) => setFormData({ ...formData, isPracticeDoubtClass: e.target.checked })}
+                className="w-5 h-5 rounded text-cyan-600 focus:ring-cyan-500 cursor-pointer"
+              />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <Button variant="ghost" type="button" onClick={() => { setIsModalOpen(false); resetForm(); }}>
+                Cancel
+              </Button>
+              <Button type="submit" variant="success">
+                Save & Go to Add Students
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </form>
+        ) : (
+          /* ===== CREATE STEP 2: Add Students to New Batch ===== */
+          <div className="space-y-5 max-h-[75vh] overflow-y-auto pr-1">
+            <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-xl mb-2">
+              <div className="h-0.5 flex-1 bg-gray-200" />
+              <div className="flex items-center gap-1 ml-3">
+                <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-sm font-bold">2</div>
+                <div className="h-0.5 flex-1 bg-emerald-200" />
+              </div>
+              <span className="ml-auto text-xs text-gray-500">Step 2: Select Students &rarr; Save</span>
+            </div>
+
+            {/* New Batch Summary */}
+            {newlyCreatedBatch && (
+              <div className="flex items-center justify-between p-4 bg-purple-50 rounded-xl border border-purple-200">
+                <div>
+                  <p className="text-xs text-gray-500">New Batch Created</p>
+                  <p className="font-bold text-gray-900">{newlyCreatedBatch.name}</p>
+                  <p className="text-xs text-gray-500">
+                    {newlyCreatedBatch.batchIdCode} &bull; {newlyCreatedBatch.course} &bull; {newlyCreatedBatch.startTime}-{newlyCreatedBatch.endTime} &bull; {newlyCreatedBatch.room}
+                  </p>
+                </div>
+                <Badge variant="success">{newlyCreatedBatch.enrolledStudents} enrolled</Badge>
+              </div>
+            )}
+
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search students by name, ID, or course..."
+                value={searchStudentTerm}
+                onChange={(e) => setSearchStudentTerm(e.target.value)}
+                className="w-full pl-11 pr-4 py-2.5 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:ring-2 focus:ring-purple-100 outline-none text-gray-900"
+              />
+            </div>
+
+            {/* Selected count badge */}
+            {selectedStudents.size > 0 && (
+              <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-xl text-sm">
+                <span className="text-emerald-800 font-medium">
+                  {selectedStudents.size} student(s) selected to add
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedStudents(new Set())}
+                  className="text-emerald-700 text-xs"
+                >
+                  Clear selection
+                </Button>
+              </div>
+            )}
+
+            {/* Student list */}
+            {(() => {
+              const allStudents = users.filter(u => u.role === 'student');
+              const filtered = searchStudentTerm
+                ? allStudents.filter(s =>
+                    s.name.toLowerCase().includes(searchStudentTerm.toLowerCase()) ||
+                    (s.studentId && s.studentId.toLowerCase().includes(searchStudentTerm.toLowerCase())) ||
+                    (s.course && s.course.toLowerCase().includes(searchStudentTerm.toLowerCase()))
+                  )
+                : allStudents;
+              const alreadyEnrolled = new Set(newlyCreatedBatch?.studentIds || []);
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="text-center py-8 text-gray-500">
+                    <Users className="w-10 h-10 mx-auto mb-2 text-gray-300" />
+                    <p>No students found.</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-xl">
+                  {filtered.map(s => {
+                    const isSelected = selectedStudents.has(s.id);
+                    const isAlreadyEnrolled = alreadyEnrolled.has(s.id);
+                    return (
+                      <div
+                        key={s.id}
+                        onClick={() => { if (!isAlreadyEnrolled) toggleSelectStudent(s.id); }}
+                        className={`flex items-center gap-3 p-3 border-b border-gray-100 cursor-pointer transition-colors ${
+                          isAlreadyEnrolled
+                            ? 'bg-gray-50 opacity-50 cursor-not-allowed'
+                            : isSelected
+                            ? 'bg-emerald-50 border-l-4 border-l-emerald-500'
+                            : 'bg-white hover:bg-gray-50 border-l-4 border-l-transparent'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0 ${
+                          isSelected ? 'bg-emerald-600' : 'bg-purple-600'
+                        }`}>
+                          {s.name.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{s.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {s.studentId} &bull; {s.course || 'N/A'}
+                            {isAlreadyEnrolled && <span className="ml-2 text-amber-600">Already enrolled</span>}
+                          </p>
+                        </div>
+                        {isAlreadyEnrolled ? (
+                          <Badge variant="warning" className="shrink-0">Enrolled</Badge>
+                        ) : (
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${
+                            isSelected
+                              ? 'border-emerald-600 bg-emerald-600'
+                              : 'border-gray-300 bg-white'
+                          }`}>
+                            {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+              <Button
+                variant="outline"
+                onClick={handleCancelCreate}
+              >
+                Back to Step 1
+              </Button>
+              <Button
+                onClick={handleAddStudentsToBatch}
+                disabled={selectedStudents.size === 0}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                {selectedStudents.size > 0
+                  ? `Add ${selectedStudents.size} Student(s) to Batch`
+                  : 'Select Students First'}
+              </Button>
+            </div>
           </div>
-        </form>
+        )}
       </Modal>
     </div>
   );
