@@ -119,6 +119,36 @@ export default function AttendancePage() {
     });
   };
 
+  const pendingCount = useMemo(() => {
+    return batchStudents.filter(s => {
+      const rec = attendance.find(a => a.studentId === s.id && a.batchId === activeBatchId && a.date === selectedDate);
+      return !rec || !rec.status;
+    }).length;
+  }, [batchStudents, attendance, activeBatchId, selectedDate]);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSubmitSuccess, setShowSubmitSuccess] = useState(false);
+
+  const handleSubmitAttendance = () => {
+    if (pendingCount > 0) {
+      if (!confirm(`${pendingCount} student(s) are still unmarked. Mark them as present before submitting?`)) {
+        return;
+      }
+      batchStudents.forEach(student => {
+        const rec = attendance.find(a => a.studentId === student.id && a.batchId === activeBatchId && a.date === selectedDate);
+        if (!rec || !rec.status) {
+          handleMarkAttendance(student.id, student.name, 'present', studentTopics[student.id] || selectedTopic || '');
+        }
+      });
+    }
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setShowSubmitSuccess(true);
+      setTimeout(() => setShowSubmitSuccess(false), 3000);
+    }, 600);
+  };
+
   // Available topics for the dropdown
   const topicOptions = [
     'Maya Interface Basics',
@@ -303,10 +333,30 @@ export default function AttendancePage() {
 
           {/* Quick Actions */}
           {currentUser?.role === 'teacher' && (
-            <div className="flex gap-3">
-              <Button onClick={markAllPresent}>
+            <div className="flex flex-wrap gap-3">
+              <Button variant="outline" onClick={markAllPresent}>
                 <CheckCircle className="w-4 h-4 mr-2" />
                 Mark All Present
+              </Button>
+              <Button
+                onClick={handleSubmitAttendance}
+                isLoading={isSubmitting}
+                disabled={pendingCount === 0 && !showSubmitSuccess}
+              >
+                {showSubmitSuccess ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Attendance Submitted!
+                  </>
+                ) : (
+                  <>
+                    <Clock className="w-4 h-4 mr-2" />
+                    Submit Attendance
+                    {pendingCount > 0 && (
+                      <span className="ml-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">{pendingCount} pending</span>
+                    )}
+                  </>
+                )}
               </Button>
             </div>
           )}
