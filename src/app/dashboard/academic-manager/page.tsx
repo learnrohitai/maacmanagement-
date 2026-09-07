@@ -794,6 +794,9 @@ export default function AcademicManagerDashboard() {
                         <td className="py-2.5 px-3">
                           <div className="font-medium text-gray-900">{s.name}</div>
                           <div className="text-xs text-gray-500">{s.phone}</div>
+                          {s.parentContact && (
+                            <div className="text-xs text-gray-400 mt-0.5">Parent: {s.parentContact}</div>
+                          )}
                         </td>
                         <td className="py-2.5 px-3 text-xs font-mono text-emerald-700">{s.studentId || 'MAAC-STU'}</td>
                         <td className="py-2.5 px-3 text-xs font-semibold text-purple-700 bg-purple-50 rounded-md inline-block mt-1">
