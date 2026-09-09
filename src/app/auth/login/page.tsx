@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import { Mail, Lock, ArrowRight, Sparkles, Users, BookOpen, CreditCard, Shield, UserCheck } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Sparkles, Users, BookOpen, CreditCard, Shield, UserCheck, BarChart3, Target } from 'lucide-react';
 
 const roleQuickLogin = [
   { role: 'admin', label: 'Admin', email: 'admin@maac.com', icon: <Shield className="w-5 h-5" />, color: 'from-purple-500 to-indigo-600' },
@@ -125,10 +125,10 @@ export default function LoginPage() {
 
             <div className="grid grid-cols-2 gap-6">
               {[
-                { icon: '📚', title: 'Batch Management', desc: 'Organize & track' },
-                { icon: '📊', title: 'Analytics', desc: 'Real-time insights' },
-                { icon: '👥', title: 'Role-based Access', desc: 'Secure & flexible' },
-                { icon: '🎯', title: 'Progress Tracking', desc: 'Track success' },
+                { icon: <BookOpen className="w-6 h-6" />, title: 'Batch Management', desc: 'Organize & track' },
+                { icon: <BarChart3 className="w-6 h-6" />, title: 'Analytics', desc: 'Real-time insights' },
+                { icon: <Users className="w-6 h-6" />, title: 'Role-based Access', desc: 'Secure & flexible' },
+                { icon: <Target className="w-6 h-6" />, title: 'Progress Tracking', desc: 'Track success' },
               ].map((feature, index) => (
                 <motion.div
                   key={index}
@@ -137,7 +137,7 @@ export default function LoginPage() {
                   transition={{ delay: 0.5 + index * 0.1 }}
                   className="flex items-start gap-3 p-4 rounded-xl bg-white/5 backdrop-blur-sm"
                 >
-                  <span className="text-2xl">{feature.icon}</span>
+                  <span className="text-cyan-300">{feature.icon}</span>
                   <div>
                     <p className="text-white font-semibold">{feature.title}</p>
                     <p className="text-white/60 text-sm">{feature.desc}</p>

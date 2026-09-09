@@ -100,7 +100,7 @@ export default function InquiriesPage() {
       case 'demo-booked':
         return <Badge variant="purple">Demo Booked</Badge>;
       case 'enrolled':
-        return <Badge variant="success">Admitted 🎉</Badge>;
+        return <Badge variant="success">Admitted</Badge>;
       case 'lost':
         return <Badge variant="danger">Dropped</Badge>;
       default:
@@ -113,7 +113,7 @@ export default function InquiriesPage() {
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Student Inquiries & Admissions</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Student Inquiries & Admissions</h1>
           <p className="text-gray-500 text-sm">Track candidate admissions pipeline, counseling calls, and follow-ups</p>
         </div>
         <Button
@@ -135,14 +135,14 @@ export default function InquiriesPage() {
               placeholder="Search by candidate name, phone or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
             />
           </div>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
             <option value="all">All Pipeline Stages</option>
             <option value="new">New Inquiries</option>
@@ -156,7 +156,7 @@ export default function InquiriesPage() {
           <select
             value={courseFilter}
             onChange={(e) => setCourseFilter(e.target.value)}
-            className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
             <option value="all">All Programs</option>
             <option value="Animation">3D Animation</option>
@@ -349,7 +349,7 @@ export default function InquiriesPage() {
               <select
                 value={formData.interestedCourse}
                 onChange={(e) => setFormData({ ...formData, interestedCourse: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none text-sm text-gray-900"
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-purple-500 outline-none text-sm text-gray-900"
               >
                 <option value="Animation">3D Animation</option>
                 <option value="VFX">VFX & Compositing</option>
@@ -366,7 +366,7 @@ export default function InquiriesPage() {
               <select
                 value={formData.source}
                 onChange={(e) => setFormData({ ...formData, source: e.target.value as InquiryLead['source'] })}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none text-sm text-gray-900"
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-purple-500 outline-none text-sm text-gray-900"
               >
                 <option value="Walk-in">Campus Walk-in</option>
                 <option value="Website">Website Form</option>
@@ -386,7 +386,7 @@ export default function InquiriesPage() {
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Candidate background, discussion notes..."
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none text-sm text-gray-900"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-purple-500 outline-none text-sm text-gray-900"
             />
           </div>
 

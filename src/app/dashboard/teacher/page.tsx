@@ -122,8 +122,8 @@ export default function TeacherDashboard() {
                 <div className="flex items-start gap-3">
                   <div className={`w-2 h-2 rounded-full mt-2 ${
                     task.priority === 'high' ? 'bg-red-500' :
-                    task.priority === 'medium' ? 'bg-yellow-500' :
-                    'bg-green-500'
+                    task.priority === 'medium' ? 'bg-amber-500' :
+                    'bg-emerald-500'
                   }`} />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">{task.task}</p>

@@ -2,12 +2,10 @@
 
 import { motion } from 'framer-motion';
 import { useStore } from '@/store/useStore';
-import { Bell, Search, Sun, Moon } from 'lucide-react';
-import { useState } from 'react';
+import { Bell, Search } from 'lucide-react';
 
 export default function Header() {
   const { currentUser } = useStore();
-  const [isDark, setIsDark] = useState(false);
 
   const roleLabels: Record<string, string> = {
     'admin': 'Administrator',
@@ -38,16 +36,6 @@ export default function Header() {
 
       {/* Right Side */}
       <div className="flex items-center gap-4">
-        {/* Theme Toggle */}
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setIsDark(!isDark)}
-          className="p-3 rounded-xl hover:bg-gray-100 transition-colors"
-        >
-          {isDark ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-gray-600" />}
-        </motion.button>
-
         {/* Notifications */}
         <motion.button
           whileHover={{ scale: 1.1 }}

@@ -23,10 +23,15 @@ import {
   HelpCircle,
   RefreshCw,
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  ShieldAlert
 } from 'lucide-react';
 import { courseOptions, weekDays } from '@/lib/mockData';
 import { Batch, User as UserType } from '@/types';
+
+// ID generators kept outside the component so render stays pure
+const generateBatchId = () => Date.now().toString();
+const generateBatchCode = () => `MAAC-BAT-${Math.floor(10 + Math.random() * 90)}`;
 
 export default function BatchesPage() {
   const { batches, addBatch, updateBatch, deleteBatch, users, currentUser, attendance, changeStudentBatch } = useStore();
@@ -42,6 +47,11 @@ export default function BatchesPage() {
   const [searchStudentTerm, setSearchStudentTerm] = useState('');
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set());
 
+  // Step 2 (Add Students) filters
+  const [studentFilterFaculty, setStudentFilterFaculty] = useState('all');
+  const [studentFilterSchedule, setStudentFilterSchedule] = useState('all');
+  const [studentFilterBatchProgress, setStudentFilterBatchProgress] = useState('all');
+
   // Transfer Modal State
   const [studentForTransfer, setStudentForTransfer] = useState<{
     student: UserType;
@@ -49,21 +59,6 @@ export default function BatchesPage() {
   } | null>(null);
   const [transferTargetBatchId, setTransferTargetBatchId] = useState<string>('');
   const [transferReason, setTransferReason] = useState<string>('Timing & Schedule Shift Request');
-
-  if (currentUser?.role === 'counselor') {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
-        <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mb-4 text-2xl font-bold">
-          🚫
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h2>
-        <p className="text-gray-600 max-w-md text-sm">
-          Batch scheduling and management is restricted to <strong>Academic Managers</strong> and <strong>Teachers</strong>. Counselors have rights for student admissions, inquiry leads, and student master profiles.
-        </p>
-      </div>
-    );
-  }
-
   const [formData, setFormData] = useState({
     batchIdCode: 'MAAC-BAT-01',
     name: '',
@@ -81,7 +76,38 @@ export default function BatchesPage() {
     isPracticeDoubtClass: false
   });
 
+  if (currentUser?.role === 'counselor') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
+        <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center mb-4">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h2>
+        <p className="text-gray-600 max-w-md text-sm">
+          Batch scheduling and management is restricted to <strong>Academic Managers</strong> and <strong>Teachers</strong>. Counselors have rights for student admissions, inquiry leads, and student master profiles.
+        </p>
+      </div>
+    );
+  }
+
   const teachers = users.filter(u => u.role === 'teacher');
+
+  // Helper: get all batches a student is currently enrolled in
+  const getStudentBatches = (studentId: string) =>
+    batches.filter(b => b.studentIds.includes(studentId));
+
+  // Helper: check if batch schedule is MWF or TTS
+  const batchMatchesSchedule = (batch: Batch, schedule: 'mwf' | 'tts') => {
+    const batchDays = batch.days.map(d => d.toLowerCase());
+    if (schedule === 'mwf') {
+      return batchDays.includes('monday') || batchDays.includes('wednesday') || batchDays.includes('friday');
+    }
+    return batchDays.includes('tuesday') || batchDays.includes('thursday') || batchDays.includes('saturday');
+  };
+
+  // Helper: check if student has any batch about to complete
+  const hasAboutToCompleteBatch = (studentId: string) =>
+    getStudentBatches(studentId).some(b => (b.classesCompleted ?? 0) > 0 && (b.classesCompleted ?? 0) >= (b.classesRemaining ?? 0));
 
   const filteredBatches = batches.filter(batch => {
     const matchesSearch =
@@ -120,7 +146,7 @@ export default function BatchesPage() {
       return;
     }
     const newBatch: Batch = {
-      id: Date.now().toString(),
+      id: generateBatchId(),
       ...formData,
       teacherName: teacher?.name || '',
       enrolledStudents: 0,
@@ -134,6 +160,9 @@ export default function BatchesPage() {
 
   const handleAddStudentsToBatch = () => {
     if (!newlyCreatedBatch) return;
+    setStudentFilterFaculty('all');
+    setStudentFilterSchedule('all');
+    setStudentFilterBatchProgress('all');
     const allStudents = users.filter(u => u.role === 'student');
     const filtered = searchStudentTerm
       ? allStudents.filter(s =>
@@ -173,11 +202,14 @@ export default function BatchesPage() {
     setCreateStep(1);
     setSelectedStudents(new Set());
     setSearchStudentTerm('');
+    setStudentFilterFaculty('all');
+    setStudentFilterSchedule('all');
+    setStudentFilterBatchProgress('all');
   };
 
   const resetForm = () => {
     setFormData({
-      batchIdCode: `MAAC-BAT-${Math.floor(10 + Math.random() * 90)}`,
+      batchIdCode: generateBatchCode(),
       name: '',
       course: '',
       teacherId: '',
@@ -196,6 +228,9 @@ export default function BatchesPage() {
     setNewlyCreatedBatch(null);
     setSelectedStudents(new Set());
     setSearchStudentTerm('');
+    setStudentFilterFaculty('all');
+    setStudentFilterSchedule('all');
+    setStudentFilterBatchProgress('all');
   };
 
   const openEditModal = (batch: Batch) => {
@@ -957,6 +992,56 @@ export default function BatchesPage() {
               />
             </div>
 
+            {/* Filters: Faculty, Schedule (MWF/TTS), About to Complete Batches */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <Select
+                value={studentFilterFaculty}
+                onChange={(e) => setStudentFilterFaculty(e.target.value)}
+                options={[
+                  { value: 'all', label: 'All Faculty' },
+                  ...teachers.map(t => ({ value: t.id, label: t.name }))
+                ]}
+                className="w-full text-sm"
+              />
+              <Select
+                value={studentFilterSchedule}
+                onChange={(e) => setStudentFilterSchedule(e.target.value)}
+                options={[
+                  { value: 'all', label: 'All Schedules' },
+                  { value: 'mwf', label: 'MWF (Mon/Wed/Fri)' },
+                  { value: 'tts', label: 'TTS (Tue/Thu/Sat)' }
+                ]}
+                className="w-full text-sm"
+              />
+              <Select
+                value={studentFilterBatchProgress}
+                onChange={(e) => setStudentFilterBatchProgress(e.target.value)}
+                options={[
+                  { value: 'all', label: 'All Batch Progress' },
+                  { value: 'about-to-complete', label: 'About to Complete Batches' }
+                ]}
+                className="w-full text-sm"
+              />
+            </div>
+            {(studentFilterFaculty !== 'all' || studentFilterSchedule !== 'all' || studentFilterBatchProgress !== 'all') && (
+              <div className="flex items-center justify-between px-1">
+                <p className="text-xs text-gray-500">Filters active</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setStudentFilterFaculty('all');
+                    setStudentFilterSchedule('all');
+                    setStudentFilterBatchProgress('all');
+                  }}
+                  className="text-purple-700 text-xs"
+                >
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  Clear filters
+                </Button>
+              </div>
+            )}
+
             {/* Selected count badge */}
             {selectedStudents.size > 0 && (
               <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-xl text-sm">
@@ -977,13 +1062,32 @@ export default function BatchesPage() {
             {/* Student list */}
             {(() => {
               const allStudents = users.filter(u => u.role === 'student');
-              const filtered = searchStudentTerm
-                ? allStudents.filter(s =>
-                    s.name.toLowerCase().includes(searchStudentTerm.toLowerCase()) ||
-                    (s.studentId && s.studentId.toLowerCase().includes(searchStudentTerm.toLowerCase())) ||
-                    (s.course && s.course.toLowerCase().includes(searchStudentTerm.toLowerCase()))
-                  )
-                : allStudents;
+              const filtered = allStudents.filter(s => {
+                const matchesSearch = !searchStudentTerm ||
+                  s.name.toLowerCase().includes(searchStudentTerm.toLowerCase()) ||
+                  (s.studentId && s.studentId.toLowerCase().includes(searchStudentTerm.toLowerCase())) ||
+                  (s.course && s.course.toLowerCase().includes(searchStudentTerm.toLowerCase()));
+                if (!matchesSearch) return false;
+
+                const studentBatches = getStudentBatches(s.id);
+
+                // Faculty filter: student is enrolled in at least one batch of this faculty
+                if (studentFilterFaculty !== 'all' && !studentBatches.some(b => b.teacherId === studentFilterFaculty)) {
+                  return false;
+                }
+
+                // Schedule filter: student is enrolled in at least one MWF or TTS batch
+                if (studentFilterSchedule !== 'all' && !studentBatches.some(b => batchMatchesSchedule(b, studentFilterSchedule as 'mwf' | 'tts'))) {
+                  return false;
+                }
+
+                // Batch progress filter: student is in a batch about to complete
+                if (studentFilterBatchProgress === 'about-to-complete' && !hasAboutToCompleteBatch(s.id)) {
+                  return false;
+                }
+
+                return true;
+              });
               const alreadyEnrolled = new Set(newlyCreatedBatch?.studentIds || []);
 
               if (filtered.length === 0) {
@@ -991,6 +1095,9 @@ export default function BatchesPage() {
                   <div className="text-center py-8 text-gray-500">
                     <Users className="w-10 h-10 mx-auto mb-2 text-gray-300" />
                     <p>No students found.</p>
+                    {(studentFilterFaculty !== 'all' || studentFilterSchedule !== 'all' || studentFilterBatchProgress !== 'all' || searchStudentTerm) && (
+                      <p className="text-xs mt-1">Try adjusting your search or filters.</p>
+                    )}
                   </div>
                 );
               }
@@ -1023,6 +1130,15 @@ export default function BatchesPage() {
                             {s.studentId} &bull; {s.course || 'N/A'}
                             {isAlreadyEnrolled && <span className="ml-2 text-amber-600">Already enrolled</span>}
                           </p>
+                          {(() => {
+                            const sBatches = getStudentBatches(s.id);
+                            if (sBatches.length === 0) return null;
+                            return (
+                              <p className="text-[11px] text-gray-400 truncate mt-0.5">
+                                In: {sBatches.map(b => `${b.name} (${b.teacherName}, ${b.classesCompleted ?? 0}/${(b.classesCompleted ?? 0) + (b.classesRemaining ?? 0)})`).join(', ')}
+                              </p>
+                            );
+                          })()}
                         </div>
                         {isAlreadyEnrolled ? (
                           <Badge variant="warning" className="shrink-0">Enrolled</Badge>

@@ -321,7 +321,7 @@ export default function LessonPlansPage() {
         {[
           { label: 'Total Plans', value: stats.total, color: 'bg-gray-500', icon: <ClipboardList className="w-5 h-5" /> },
           { label: 'In Progress', value: stats.inProgress, color: 'bg-blue-500', icon: <Clock className="w-5 h-5" /> },
-          { label: 'Completed', value: stats.completed, color: 'bg-green-500', icon: <CheckCircle className="w-5 h-5" /> },
+          { label: 'Completed', value: stats.completed, color: 'bg-emerald-500', icon: <CheckCircle className="w-5 h-5" /> },
           { label: 'Planned', value: stats.planned, color: 'bg-amber-500', icon: <BookOpen className="w-5 h-5" /> },
         ].map((stat, index) => (
           <motion.div
@@ -419,7 +419,7 @@ export default function LessonPlansPage() {
                         {plan.teacherName}
                       </span>
                       <span className="flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4 text-green-500" />
+                        <Calendar className="w-4 h-4 text-emerald-500" />
                         {new Date(plan.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                       </span>
                       <span className="flex items-center gap-1.5">
@@ -453,7 +453,7 @@ export default function LessonPlansPage() {
                       <div className="flex flex-wrap gap-2 mb-4">
                         {plan.materials.map((mat, i) => (
                           <span key={i} className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
-                            📦 {mat}
+                            {mat}
                           </span>
                         ))}
                       </div>
@@ -553,7 +553,7 @@ export default function LessonPlansPage() {
                                         <div
                                           key={subTopic.id}
                                           className={`flex items-center gap-3 py-3 px-3 rounded-lg transition-colors ${
-                                            subTopic.isCompleted ? 'bg-green-50' : 'hover:bg-gray-50'
+                                            subTopic.isCompleted ? 'bg-emerald-50' : 'hover:bg-gray-50'
                                           } ${stIdx < chapter.subTopics.length - 1 ? 'border-b border-gray-50' : ''}`}
                                         >
                                           <button
@@ -561,20 +561,20 @@ export default function LessonPlansPage() {
                                             className="flex-shrink-0"
                                           >
                                             {subTopic.isCompleted ? (
-                                              <CheckCircle2 className="w-5 h-5 text-green-500" />
+                                              <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                                             ) : (
-                                              <Circle className="w-5 h-4 text-gray-300 hover:text-green-400 transition-colors" />
+                                              <Circle className="w-5 h-4 text-gray-300 hover:text-emerald-400 transition-colors" />
                                             )}
                                           </button>
                                           <span className={`text-sm flex-1 ${
                                             subTopic.isCompleted
-                                              ? 'text-green-700 line-through decoration-green-400'
+                                              ? 'text-emerald-700 line-through decoration-emerald-400'
                                               : 'text-gray-700'
                                           }`}>
                                             {subTopic.name}
                                           </span>
                                           {subTopic.isCompleted && (
-                                            <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded-full">
+                                            <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
                                               Done
                                             </span>
                                           )}
@@ -687,7 +687,7 @@ export default function LessonPlansPage() {
             {formData.chapters.length === 0 && (
               <div className="text-center py-8 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
                 <Layers className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">No chapters added yet. Click "Add Chapter" to start.</p>
+                <p className="text-sm text-gray-500">No chapters added yet. Click &quot;Add Chapter&quot; to start.</p>
               </div>
             )}
 

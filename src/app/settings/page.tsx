@@ -218,7 +218,7 @@ export default function SettingsPage() {
                 <div>
                   <p className="font-medium text-gray-900 mb-3">Accent Color</p>
                   <div className="flex gap-3">
-                    {['bg-purple-500', 'bg-cyan-500', 'bg-green-500', 'bg-orange-500', 'bg-pink-500'].map((color, index) => (
+                    {['bg-purple-500', 'bg-cyan-500', 'bg-emerald-500', 'bg-orange-500', 'bg-pink-500'].map((color, index) => (
                       <button
                         key={color}
                         className={`w-10 h-10 rounded-full ${color} ${

@@ -57,17 +57,14 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
   const { addStudent, currentUser } = useStore();
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
 
-  // Auto-generated ID Code
-  const defaultStudentId = `MAAC-2026-${Math.floor(100 + Math.random() * 900)}`;
-
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => ({
     fullName: initialLead?.studentName || '',
     contactNo: initialLead?.phone || '',
     email: initialLead?.email || '',
     parentName: '',
     parentContact: '',
     dob: '2005-01-15',
-    studentId: defaultStudentId,
+    studentId: `MAAC-2026-${Math.floor(100 + Math.random() * 900)}`,
     course: initialLead?.interestedCourse || 'Animation',
     admissionDate: new Date().toISOString().split('T')[0],
     counselorName: currentUser?.name || 'Priya Sharma',
@@ -81,7 +78,7 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
     ],
     remarks: 'Candidate registered through Counselor Desk. Ready for Academic Manager batch scheduling.',
     waitingForModule: 'Module 1: Fundamentals & Foundation'
-  });
+  }));
 
   const handleDocToggle = (docId: string) => {
     setFormData(prev => {

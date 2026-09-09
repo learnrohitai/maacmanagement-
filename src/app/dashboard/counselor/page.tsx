@@ -74,17 +74,17 @@ export default function CounselorDashboard() {
   const getStudentStatusBadge = (status?: StudentStatus) => {
     switch (status) {
       case 'Waiting for Batch':
-        return <Badge variant="warning">⏳ Waiting for AM Batch</Badge>;
+        return <Badge variant="warning">Waiting for AM Batch</Badge>;
       case 'Active':
-        return <Badge variant="success">✅ Active in Class</Badge>;
+        return <Badge variant="success">Active in Class</Badge>;
       case 'On Hold/Pause':
-        return <Badge variant="default">⏸️ On Hold/Pause</Badge>;
+        return <Badge variant="default">On Hold / Pause</Badge>;
       case 'Course Completed':
-        return <Badge variant="purple">🎓 Completed</Badge>;
+        return <Badge variant="purple">Completed</Badge>;
       case 'Passout/Certificate':
-        return <Badge variant="info">📜 Certificate Issued</Badge>;
+        return <Badge variant="info">Certificate Issued</Badge>;
       case 'Dropped (ADO/FDO)':
-        return <Badge variant="danger">❌ Dropped</Badge>;
+        return <Badge variant="danger">Dropped</Badge>;
       default:
         return <Badge variant="default">Active</Badge>;
     }
@@ -114,7 +114,7 @@ export default function CounselorDashboard() {
               <Sparkles className="w-3.5 h-3.5" />
               MAAC Counselor Admission Portal
             </div>
-            <h1 className="text-3xl font-bold mb-2">Counselor Admission Desk 🎓</h1>
+            <h1 className="text-3xl font-bold mb-2">Counselor Admission Desk</h1>
             <p className="text-emerald-50 max-w-xl text-sm md:text-base">
               Create new student admissions, record candidate details, guardian contacts, and submitted documents. Admissions are submitted and automatically forwarded to Academic Managers for batch scheduling.
             </p>

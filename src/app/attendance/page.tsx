@@ -14,7 +14,8 @@ import {
   Clock,
   Download,
   Users,
-  BookOpen
+  BookOpen,
+  MapPin
 } from 'lucide-react';
 
 export default function AttendancePage() {
@@ -173,16 +174,16 @@ export default function AttendancePage() {
     switch (buttonType) {
       case 'present':
         return isActive
-          ? 'bg-green-500 text-white shadow-md shadow-green-200'
-          : 'bg-green-100 text-green-600 hover:bg-green-500 hover:text-white hover:shadow-md hover:shadow-green-200';
+          ? 'bg-emerald-500 text-white shadow-md shadow-emerald-200'
+          : 'bg-emerald-100 text-emerald-600 hover:bg-emerald-500 hover:text-white hover:shadow-md hover:shadow-emerald-200';
       case 'absent':
         return isActive
           ? 'bg-red-500 text-white shadow-md shadow-red-200'
           : 'bg-red-100 text-red-600 hover:bg-red-500 hover:text-white hover:shadow-md hover:shadow-red-200';
       case 'late':
         return isActive
-          ? 'bg-yellow-500 text-white shadow-md shadow-yellow-200'
-          : 'bg-yellow-100 text-yellow-600 hover:bg-yellow-500 hover:text-white hover:shadow-md hover:shadow-yellow-200';
+          ? 'bg-amber-400 text-white shadow-md shadow-amber-200'
+          : 'bg-amber-100 text-amber-600 hover:bg-amber-400 hover:text-white hover:shadow-md hover:shadow-amber-200';
       default:
         return 'bg-gray-100 text-gray-500';
     }
@@ -294,21 +295,30 @@ export default function AttendancePage() {
                 </div>
               </div>
               <div className="flex items-center gap-4 text-sm">
-                <span className="text-gray-600">📅 {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</span>
-                <span className="text-gray-600">👥 {batchStudents.length} Students</span>
-                <span className="text-gray-600">📍 {activeBatch.room}</span>
+                <span className="flex items-center gap-1.5 text-gray-600">
+                  <Calendar className="w-4 h-4 text-purple-500" />
+                  {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                </span>
+                <span className="flex items-center gap-1.5 text-gray-600">
+                  <Users className="w-4 h-4 text-cyan-500" />
+                  {batchStudents.length} Students
+                </span>
+                <span className="flex items-center gap-1.5 text-gray-600">
+                  <MapPin className="w-4 h-4 text-emerald-500" />
+                  {activeBatch.room}
+                </span>
               </div>
             </div>
           </Card>
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {[
+            {            [
               { label: 'Total', value: todayStats.total, color: 'bg-gray-500', icon: <Users className="w-5 h-5" /> },
               { label: 'Marked', value: todayStats.marked, color: 'bg-purple-500', icon: <Calendar className="w-5 h-5" /> },
-              { label: 'Present', value: todayStats.present, color: 'bg-green-500', icon: <CheckCircle className="w-5 h-5" /> },
+              { label: 'Present', value: todayStats.present, color: 'bg-emerald-500', icon: <CheckCircle className="w-5 h-5" /> },
               { label: 'Absent', value: todayStats.absent, color: 'bg-red-500', icon: <XCircle className="w-5 h-5" /> },
-              { label: 'Late', value: todayStats.late, color: 'bg-yellow-500', icon: <Clock className="w-5 h-5" /> },
+              { label: 'Late', value: todayStats.late, color: 'bg-amber-400', icon: <Clock className="w-5 h-5" /> },
             ].map((stat, index) => (
               <motion.div
                 key={stat.label}

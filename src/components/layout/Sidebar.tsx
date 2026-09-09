@@ -52,7 +52,8 @@ export default function Sidebar() {
     currentUser && item.roles.includes(currentUser.role)
   );
 
-  const SidebarContent = () => (
+  // Render function (not a nested component) so no state is lost on re-render
+  const renderSidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="p-6 border-b border-white/10">
@@ -173,7 +174,7 @@ export default function Sidebar() {
               >
                 <X className="w-6 h-6" />
               </button>
-              <SidebarContent />
+              {renderSidebarContent()}
             </motion.aside>
           </>
         )}
@@ -190,7 +191,7 @@ export default function Sidebar() {
         >
           <ChevronLeft className={`w-4 h-4 transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
         </button>
-        <SidebarContent />
+        {renderSidebarContent()}
       </motion.aside>
     </>
   );

@@ -76,15 +76,13 @@ export default function NewAdmissionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessBanner, setShowSuccessBanner] = useState(false);
 
-  const defaultStudentId = `MAAC-2026-${Math.floor(100 + Math.random() * 900)}`;
-
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => ({
     fullName: '',
     contactNo: '',
     email: '',
     dob: '2005-06-15',
     gender: 'Male',
-    studentId: defaultStudentId,
+    studentId: `MAAC-2026-${Math.floor(100 + Math.random() * 900)}`,
     parentName: '',
     parentRelation: 'Father',
     parentContact: '',
@@ -113,7 +111,7 @@ export default function NewAdmissionPage() {
     // How did you know about MAAC?
     referralSource: '',
     referralDetails: ''
-  });
+  }));
 
   const handleSelectCourse = (courseId: string) => {
     setFormData(prev => ({
@@ -198,7 +196,7 @@ export default function NewAdmissionPage() {
               MAAC Institute • Student Master Enrollment Portal
             </div>
             <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-              Create New Student Admission 🎓
+              Create New Student Admission
             </h1>
           </div>
         </div>
@@ -673,7 +671,7 @@ export default function NewAdmissionPage() {
               <div className="space-y-2.5 bg-gray-50/80 p-3.5 rounded-2xl text-xs mb-4">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Status:</span>
-                  <Badge variant="warning">⏳ Waiting for AM Batch</Badge>
+                  <Badge variant="warning">Waiting for AM Batch</Badge>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Parent:</span>

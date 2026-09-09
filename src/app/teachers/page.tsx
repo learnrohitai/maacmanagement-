@@ -70,7 +70,7 @@ export default function TeachersPage() {
         {[
           { label: 'Total Teachers', value: teachers.length, color: 'bg-purple-500', icon: <Users className="w-5 h-5" /> },
           { label: 'Total Batches', value: batches.length, color: 'bg-cyan-500', icon: <BookOpen className="w-5 h-5" /> },
-          { label: 'Avg Students/Teacher', value: Math.round(teachers.reduce((acc, t) => acc + getTeacherStats(t.id).students, 0) / teachers.length), color: 'bg-green-500', icon: <Award className="w-5 h-5" /> },
+          { label: 'Avg Students/Teacher', value: Math.round(teachers.reduce((acc, t) => acc + getTeacherStats(t.id).students, 0) / teachers.length), color: 'bg-emerald-500', icon: <Award className="w-5 h-5" /> },
         ].map((stat, index) => (
           <motion.div
             key={stat.label}
@@ -158,8 +158,8 @@ export default function TeachersPage() {
                     <p className="text-lg font-bold text-cyan-600">{stats.students}</p>
                     <p className="text-xs text-gray-500">Students</p>
                   </div>
-                  <div className="text-center p-2 bg-green-50 rounded-lg">
-                    <p className="text-lg font-bold text-green-600">{stats.hours}h</p>
+                  <div className="text-center p-2 bg-emerald-50 rounded-lg">
+                    <p className="text-lg font-bold text-emerald-600">{stats.hours}h</p>
                     <p className="text-xs text-gray-500">Weekly</p>
                   </div>
                 </div>

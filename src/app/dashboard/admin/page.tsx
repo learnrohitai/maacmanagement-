@@ -168,7 +168,7 @@ export default function AdminDashboard() {
               >
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                   activity.type === 'enrollment' ? 'bg-purple-100 text-purple-600' :
-                  activity.type === 'payment' ? 'bg-green-100 text-green-600' :
+                  activity.type === 'payment' ? 'bg-emerald-100 text-emerald-600' :
                   activity.type === 'attendance' ? 'bg-blue-100 text-blue-600' :
                   'bg-orange-100 text-orange-600'
                 }`}>

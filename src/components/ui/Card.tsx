@@ -55,7 +55,7 @@ export function StatCard({ title, value, icon, color, trend }: {
             {value}
           </motion.p>
           {trend && (
-            <p className="text-sm text-green-500 mt-1 flex items-center">
+            <p className="text-sm text-emerald-500 mt-1 flex items-center">
               <span className="mr-1">↑</span>
               {trend}
             </p>

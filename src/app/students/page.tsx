@@ -60,17 +60,17 @@ export default function StudentsPage() {
   const getStudentStatusBadge = (status?: StudentStatus) => {
     switch (status) {
       case 'Waiting for Batch':
-        return <Badge variant="warning">⏳ Waiting for Batch</Badge>;
+        return <Badge variant="warning">Waiting for Batch</Badge>;
       case 'Active':
-        return <Badge variant="success">✅ Active</Badge>;
+        return <Badge variant="success">Active</Badge>;
       case 'On Hold/Pause':
-        return <Badge variant="default">⏸️ On Hold/Pause</Badge>;
+        return <Badge variant="default">On Hold / Pause</Badge>;
       case 'Course Completed':
-        return <Badge variant="purple">🎓 Completed</Badge>;
+        return <Badge variant="purple">Completed</Badge>;
       case 'Passout/Certificate':
-        return <Badge variant="info">📜 Certificate Issued</Badge>;
+        return <Badge variant="info">Certificate Issued</Badge>;
       case 'Dropped (ADO/FDO)':
-        return <Badge variant="danger">❌ Dropped</Badge>;
+        return <Badge variant="danger">Dropped</Badge>;
       default:
         return <Badge variant="default">Active</Badge>;
     }
@@ -155,28 +155,28 @@ export default function StudentsPage() {
               placeholder="Search by student name, ID, phone, email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-gray-900"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900"
             />
           </div>
 
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+            className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium"
           >
             <option value="all">All Student Statuses</option>
-            <option value="Waiting for Batch">⏳ Waiting for Batch</option>
-            <option value="Active">✅ Active</option>
-            <option value="On Hold/Pause">⏸️ On Hold / Pause</option>
-            <option value="Course Completed">🎓 Course Completed</option>
-            <option value="Passout/Certificate">📜 Passout / Certificate</option>
-            <option value="Dropped (ADO/FDO)">❌ Dropped (ADO/FDO)</option>
+            <option value="Waiting for Batch">Waiting for Batch</option>
+            <option value="Active">Active</option>
+            <option value="On Hold/Pause">On Hold / Pause</option>
+            <option value="Course Completed">Course Completed</option>
+            <option value="Passout/Certificate">Passout / Certificate</option>
+            <option value="Dropped (ADO/FDO)">Dropped (ADO/FDO)</option>
           </select>
 
           <select
             value={courseFilter}
             onChange={(e) => setCourseFilter(e.target.value)}
-            className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+            className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-medium"
           >
             <option value="all">All Course Programs</option>
             <option value="Animation">3D Animation Film Making</option>
@@ -260,7 +260,7 @@ export default function StudentsPage() {
                         </div>
                         <span className={`inline-block text-[10px] px-2 py-0.5 rounded-md font-medium mt-0.5 ${
                           student.paymentStatus === 'Paid'
-                            ? 'bg-green-100 text-green-800'
+                            ? 'bg-emerald-100 text-emerald-800'
                             : student.paymentStatus === 'Partial'
                             ? 'bg-amber-100 text-amber-800'
                             : 'bg-red-100 text-red-800'
