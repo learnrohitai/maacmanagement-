@@ -681,11 +681,11 @@ export default function BatchesPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Select
-                label="Course Program *"
+                label="Software *"
                 value={formData.course}
                 onChange={(e) => setFormData({ ...formData, course: e.target.value })}
                 options={[
-                  { value: '', label: 'Select Course' },
+                  { value: '', label: 'Select Software' },
                   ...courseOptions.map(c => ({ value: c, label: c }))
                 ]}
                 required
@@ -834,11 +834,11 @@ export default function BatchesPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Select
-                label="Course Program *"
+                label="Software *"
                 value={formData.course}
                 onChange={(e) => setFormData({ ...formData, course: e.target.value })}
                 options={[
-                  { value: '', label: 'Select Course' },
+                  { value: '', label: 'Select Software' },
                   ...courseOptions.map(c => ({ value: c, label: c }))
                 ]}
                 required
