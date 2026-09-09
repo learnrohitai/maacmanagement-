@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -24,7 +25,8 @@ import {
   RefreshCw,
   ArrowRight,
   CheckCircle2,
-  ShieldAlert
+  ShieldAlert,
+  ClipboardCheck
 } from 'lucide-react';
 import { courseOptions, weekDays } from '@/lib/mockData';
 import { Batch, User as UserType } from '@/types';
@@ -35,6 +37,7 @@ const generateBatchCode = () => `MAAC-BAT-${Math.floor(10 + Math.random() * 90)}
 
 export default function BatchesPage() {
   const { batches, addBatch, updateBatch, deleteBatch, users, currentUser, attendance, changeStudentBatch } = useStore();
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterSchedule, setFilterSchedule] = useState('all');
@@ -404,6 +407,19 @@ export default function BatchesPage() {
                     </div>
                   </div>
 
+                  {/* Eye-catching Attendance quick action (Teachers) */}
+                  {currentUser?.role === 'teacher' && (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => router.push(`/attendance?batch=${batch.id}`)}
+                      className="w-full mb-4 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white text-sm font-bold shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-shadow duration-300"
+                    >
+                      <ClipboardCheck className="w-4 h-4" />
+                      Mark Attendance
+                      <ArrowRight className="w-4 h-4" />
+                    </motion.button>
+                  )}
 
                 </div>
 

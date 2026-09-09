@@ -1,13 +1,15 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useStore } from '@/store/useStore';
+import { useAttendanceSync } from '@/lib/useAttendanceSync';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input, { Select } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Table';
+import { CloudUpload, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import {
   Calendar,
   CheckCircle,
@@ -141,10 +143,28 @@ export default function AttendancePage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSubmitSuccess, setShowSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleSubmitAttendance = () => {
+  // --- DB sync: load from MongoDB, flush pending marks ---
+  const savedRecordIds = useMemo(
+    () => new Set(attendance.filter(a => a.batchId === activeBatchId).map(a => a.id)),
+    [attendance, activeBatchId]
+  );
+  const { saving: dbSaving, saveState, error: dbError, flush } = useAttendanceSync({
+    batchId: activeBatchId,
+    storeRecords: attendance,
+    storeRecordIds: savedRecordIds,
+    addAttendance,
+  });
+
+  const handleSubmitAttendance = async () => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    // 1. Auto-mark unmarked students as present (if user confirms)
     if (pendingCount > 0) {
       if (!confirm(`${pendingCount} student(s) are still unmarked. Mark them as present before submitting?`)) {
+        setIsSubmitting(false);
         return;
       }
       batchStudents.forEach(student => {
@@ -154,12 +174,18 @@ export default function AttendancePage() {
         }
       });
     }
-    setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+
+    // 2. Give React a tick so the auto-marks land in the store, then flush to DB
+    await new Promise(r => setTimeout(r, 50));
+    const ok = await flush();
+    setIsSubmitting(false);
+
+    if (ok) {
       setShowSubmitSuccess(true);
       setTimeout(() => setShowSubmitSuccess(false), 3000);
-    }, 600);
+    } else {
+      setSubmitError('Could not reach the database. Your marks are kept locally — try again.');
+    }
   };
 
   // Available topics for the dropdown
@@ -355,31 +381,69 @@ export default function AttendancePage() {
 
           {/* Quick Actions */}
           {currentUser?.role === 'teacher' && (
-            <div className="flex flex-wrap gap-3">
-              <Button variant="outline" onClick={markAllPresent}>
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Mark All Present
-              </Button>
-              <Button
-                onClick={handleSubmitAttendance}
-                isLoading={isSubmitting}
-                disabled={pendingCount === 0 && !showSubmitSuccess}
-              >
-                {showSubmitSuccess ? (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Attendance Submitted!
-                  </>
-                ) : (
-                  <>
-                    <Clock className="w-4 h-4 mr-2" />
-                    Submit Attendance
-                    {pendingCount > 0 && (
-                      <span className="ml-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">{pendingCount} pending</span>
-                    )}
-                  </>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <Button variant="outline" onClick={markAllPresent}>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Mark All Present
+                </Button>
+                <Button
+                  onClick={handleSubmitAttendance}
+                  isLoading={isSubmitting || dbSaving}
+                >
+                  {showSubmitSuccess || saveState === 'saved' ? (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Attendance Saved!
+                    </>
+                  ) : (
+                    <>
+                      <CloudUpload className="w-4 h-4 mr-2" />
+                      Submit Attendance
+                      {pendingCount > 0 && (
+                        <span className="ml-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">{pendingCount} pending</span>
+                      )}
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {/* Save status feedback */}
+              <AnimatePresence>
+                {submitError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-2 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3.5 py-2.5"
+                  >
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    {submitError}
+                  </motion.div>
                 )}
-              </Button>
+                {!submitError && saveState === 'pending' && (isSubmitting || dbSaving) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-2 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-xl px-3.5 py-2.5"
+                  >
+                    <Loader2 className="w-4 h-4 shrink-0 animate-spin" />
+                    Saving attendance to database...
+                  </motion.div>
+                )}
+                {!submitError && saveState === 'error' && dbError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-2 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3.5 py-2.5"
+                  >
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    DB error: {dbError} — marks kept locally, will retry.
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
 
