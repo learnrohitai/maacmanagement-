@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { useState, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -20,8 +21,10 @@ import {
 
 export default function AttendancePage() {
   const { currentUser, attendance, batches, users, addAttendance, updateAttendance } = useStore();
+  const searchParams = useSearchParams();
+  const preselectedBatchId = searchParams.get('batch') || '';
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedBatch, setSelectedBatch] = useState('');
+  const [selectedBatch, setSelectedBatch] = useState(preselectedBatchId);
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedTopic, setSelectedTopic] = useState('');
   const [studentTopics, setStudentTopics] = useState<Record<string, string>>({});
@@ -35,6 +38,15 @@ export default function AttendancePage() {
     : batches;
 
   // Auto-select first batch if none selected
+  // Sync batch selection if the ?batch= query param changes while mounted
+  const [prevPreselectedBatch, setPrevPreselectedBatch] = useState(preselectedBatchId);
+  if (preselectedBatchId !== prevPreselectedBatch) {
+    setPrevPreselectedBatch(preselectedBatchId);
+    if (preselectedBatchId) {
+      setSelectedBatch(preselectedBatchId);
+    }
+  }
+
   const activeBatchId = selectedBatch || (myBatches.length > 0 ? myBatches[0].id : '');
   const activeBatch = myBatches.find(b => b.id === activeBatchId);
 

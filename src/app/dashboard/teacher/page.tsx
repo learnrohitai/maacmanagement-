@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import Card, { StatCard } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -11,18 +12,16 @@ import {
   Calendar,
   Clock,
   CheckCircle,
-  AlertCircle,
   Plus,
-  ChevronRight,
-  FileText
+  ClipboardList
 } from 'lucide-react';
 
 export default function TeacherDashboard() {
-  const { currentUser, batches, attendance, lessonPlans } = useStore();
+  const { currentUser, batches, attendance } = useStore();
+  const router = useRouter();
 
   const myBatches = batches.filter(b => b.teacherId === currentUser?.id);
   const todayAttendance = attendance.filter(a => a.date === new Date().toISOString().split('T')[0]);
-  const myLessonPlans = lessonPlans.filter(lp => lp.teacherId === currentUser?.id);
 
   const stats = [
     { title: 'My Batches', value: myBatches.length, icon: <BookOpen className="w-6 h-6" />, color: 'purple' as const, trend: 'Active' },
@@ -181,6 +180,19 @@ export default function TeacherDashboard() {
                   <Calendar className="w-4 h-4 mr-2" />
                   {batch.days.join(', ')}
                 </div>
+              </div>
+
+              {/* Attendance quick action */}
+              <div className="mt-4 pt-3 border-t border-gray-100">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full text-xs font-semibold"
+                  onClick={() => router.push(`/attendance?batch=${batch.id}`)}
+                >
+                  <ClipboardList className="w-4 h-4 mr-1.5" />
+                  Attendance
+                </Button>
               </div>
 
             </motion.div>
