@@ -1,8 +1,8 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -47,12 +47,23 @@ const generateBatchCode = () => `MAAC-BAT-${Math.floor(10 + Math.random() * 90)}
 export default function BatchesPage() {
   const { batches, addBatch, updateBatch, deleteBatch, users, currentUser, attendance, changeStudentBatch } = useStore();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterSchedule, setFilterSchedule] = useState('all');
   const [filterTeacher, setFilterTeacher] = useState('all');
   const [filterSoftware, setFilterSoftware] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Deep link: /batches?create=1 auto-opens the Create Batch wizard (Step 1)
+  useEffect(() => {
+    if (searchParams.get('create') === '1' && currentUser && currentUser.role !== 'counselor') {
+      resetForm();
+      setIsModalOpen(true);
+      router.replace('/batches');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, currentUser]);
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [viewingBatch, setViewingBatch] = useState<Batch | null>(null);
   const [viewingBreakdownBatch, setViewingBreakdownBatch] = useState<Batch | null>(null);

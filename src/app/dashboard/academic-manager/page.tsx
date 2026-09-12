@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { useState, useMemo } from 'react';
 import { useStore } from '@/store/useStore';
 import Card, { StatCard } from '@/components/ui/Card';
@@ -19,6 +20,7 @@ import {
   PlusCircle,
   RefreshCw,
   Search,
+  Plus,
   ArrowLeftRight,
   UserCheck,
   List,
@@ -262,9 +264,19 @@ export default function AcademicManagerDashboard() {
             Academic Dean & Timetable Control
           </div>
           <h1 className="text-3xl font-bold mb-2">Academic Operations & Batch Allocations 📊</h1>
-          <p className="text-white/90 max-w-2xl text-sm md:text-base">
+          <p className="text-white/90 max-w-2xl text-sm md:text-base mb-4">
             Allocate newly admitted students to batches, perform batch transfers upon student request, and manage faculty scheduling.
           </p>
+          <Link href="/batches?create=1">
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-orange-600 text-sm font-bold shadow-lg shadow-orange-900/20 hover:bg-orange-50 transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              Create New Batch
+            </motion.button>
+          </Link>
         </div>
       </motion.div>
 
@@ -341,8 +353,14 @@ export default function AcademicManagerDashboard() {
             </div>
 
             {!activeTrackerBatch || !trackerBatchSoftware ? (
-              <div className="p-6 text-center text-xs text-gray-500 bg-gray-50 rounded-xl">
-                Create a batch to start tracking its software sessions.
+              <div className="p-6 text-center text-xs text-gray-500 bg-gray-50 rounded-xl space-y-3">
+                <p>No batch found to track its software sessions.</p>
+                <Link href="/batches?create=1">
+                  <Button>
+                    <Plus className="w-4 h-4 mr-1.5" />
+                    Create New Batch
+                  </Button>
+                </Link>
               </div>
             ) : (
               <>
