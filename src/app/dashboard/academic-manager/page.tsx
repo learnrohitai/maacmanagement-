@@ -28,6 +28,8 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { User as UserType, Batch } from '@/types';
+import { COURSE_DATABASE, getSoftwaresForCourse, findSoftwareDetails, calculateStudentCourseProgress, StudentCourseProgressReport } from '@/lib/softwareData';
+import StudentCurriculumModal from '@/components/curriculum/StudentCurriculumModal';
 
 type ScheduleView = 'day-mwf' | 'day-tts' | 'teacher';
 
@@ -53,6 +55,12 @@ export default function AcademicManagerDashboard() {
   const [scheduleView, setScheduleView] = useState<ScheduleView>('day-mwf');
 
   const [studentSearchTerm, setStudentSearchTerm] = useState('');
+
+  // ===== Course & Software Curriculum Tracker state =====
+  const [trackerCourse, setTrackerCourse] = useState<string>(COURSE_DATABASE[0]?.name || '');
+  const [trackerBatchId, setTrackerBatchId] = useState<string>('all');
+  const [trackerStudentSearch, setTrackerStudentSearch] = useState('');
+  const [trackerStudent, setTrackerStudent] = useState<UserType | null>(null);
 
   const teachers = users.filter(u => u.role === 'teacher');
   const allStudents = storeStudents.length > 0 ? storeStudents : users.filter(u => u.role === 'student');
@@ -126,6 +134,65 @@ export default function AcademicManagerDashboard() {
     return allStudents.filter(s => viewingBatch.studentIds.includes(s.id));
   }, [viewingBatch, allStudents]);
 
+  // ===== Course & Software Curriculum Tracker computations =====
+  const trackerCourseStudents = useMemo(() => {
+    if (!trackerCourse) return [];
+    return allStudents.filter(s => s.course === trackerCourse);
+  }, [allStudents, trackerCourse]);
+
+  const trackerCourseReports = useMemo(() => {
+    const map = new Map<string, { student: UserType; report: StudentCourseProgressReport }>();
+    trackerCourseStudents.forEach(s => {
+      map.set(s.id, {
+        student: s,
+        report: calculateStudentCourseProgress(s.id, s.course, attendance, s.course),
+      });
+    });
+    return map;
+  }, [trackerCourseStudents, attendance]);
+
+  // Aggregate per-software progress across all students in the selected course
+  const trackerCoursePipeline = useMemo(() => {
+    const softwares = getSoftwaresForCourse(trackerCourse);
+    return softwares.map(sw => {
+      let attendedSum = 0;
+      let totalSessions = sw.totalSessions;
+      let studentsStarted = 0;
+      trackerCourseReports.forEach(({ report }) => {
+        const stat = report.softwares.find(x => x.softwareId === sw.id);
+        if (stat) {
+          attendedSum += stat.attendedSessions;
+          if (stat.attendedSessions > 0) studentsStarted++;
+        }
+      });
+      const studentCount = trackerCourseReports.size || 1;
+      const avgCompletion = Math.round(attendedSum / (totalSessions * studentCount) * 100);
+      return {
+        software: sw,
+        avgCompletion,
+        studentsStarted,
+        totalStudents: trackerCourseReports.size,
+      };
+    });
+  }, [trackerCourse, trackerCourseReports]);
+
+  const trackerBatch = batches.find(b => b.id === trackerBatchId);
+  const trackerBatchStudents = useMemo(() => {
+    if (!trackerBatch) return [];
+    return allStudents.filter(s => trackerBatch.studentIds.includes(s.id));
+  }, [allStudents, trackerBatch]);
+
+  const trackerFilteredCourseStudents = useMemo(() => {
+    const term = trackerStudentSearch.toLowerCase();
+    return Array.from(trackerCourseReports.values()).filter(({ student, report }) => {
+      if (!term) return true;
+      return (
+        student.name.toLowerCase().includes(term) ||
+        (student.studentId || '').toLowerCase().includes(term)
+      );
+    });
+  }, [trackerCourseReports, trackerStudentSearch]);
+
   return (
     <div className="space-y-6">
       {/* Welcome */}
@@ -155,6 +222,146 @@ export default function AcademicManagerDashboard() {
           <StatCard key={index} {...stat} />
         ))}
       </div>
+
+      {/* ===== Course & Software Curriculum Tracker ===== */}
+      <Card className="p-6 border-l-4 border-l-purple-500">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
+          <div>
+            <div className="flex items-center gap-2">
+              <LayoutGrid className="w-5 h-5 text-purple-600" />
+              <h3 className="text-lg font-bold text-gray-900">Course & Software Curriculum Tracker</h3>
+            </div>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Course-wise software pipeline with attended / remaining sessions and per-session attendance drilldown for every student.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <select
+              value={trackerCourse}
+              onChange={(e) => setTrackerCourse(e.target.value)}
+              className="px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+            >
+              {COURSE_DATABASE.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name} ({c.softwares.length} softwares)
+                </option>
+              ))}
+            </select>
+            <select
+              value={trackerBatchId}
+              onChange={(e) => setTrackerBatchId(e.target.value)}
+              className="px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
+            >
+              <option value="all">All Batches</option>
+              {batches.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.batchIdCode || b.name} — {b.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Software pipeline summary for the selected course */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+          {trackerCoursePipeline.map(({ software, avgCompletion, studentsStarted, totalStudents }) => (
+            <div key={software.id} className="p-3 rounded-xl border border-gray-200 bg-white space-y-2">
+              <div className="flex items-start justify-between gap-1">
+                <p className="text-xs font-bold text-gray-900 leading-tight">{software.name}</p>
+                <span className="text-[10px] font-bold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded shrink-0">
+                  {software.totalSessions}S
+                </span>
+              </div>
+              <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${avgCompletion >= 100 ? 'bg-emerald-500' : avgCompletion > 0 ? 'bg-amber-500' : 'bg-gray-300'}`}
+                  style={{ width: `${avgCompletion}%` }}
+                />
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-gray-500">
+                <span>{avgCompletion}% avg</span>
+                <span>{studentsStarted}/{totalStudents} started</span>
+              </div>
+            </div>
+          ))}
+          {trackerCoursePipeline.length === 0 && (
+            <div className="col-span-full p-4 text-center text-xs text-gray-500">
+              Select a course to view its software pipeline.
+            </div>
+          )}
+        </div>
+
+        {/* Student progress matrix for the selected course (+ optional batch filter) */}
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <p className="text-xs font-bold text-gray-600 uppercase tracking-wide">
+            Enrolled Students ({trackerFilteredCourseStudents.length})
+          </p>
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Find student..."
+              value={trackerStudentSearch}
+              onChange={(e) => setTrackerStudentSearch(e.target.value)}
+              className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+        </div>
+
+        {trackerFilteredCourseStudents.length === 0 ? (
+          <div className="p-6 text-center text-xs text-gray-500 bg-gray-50 rounded-xl">
+            No students enrolled in <strong>{trackerCourse || 'this course'}</strong> yet.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {trackerFilteredCourseStudents.map(({ student, report }) => {
+              const inSelectedBatch = trackerBatchId === 'all' || trackerBatch?.studentIds.includes(student.id);
+              if (!inSelectedBatch) return null;
+              return (
+                <button
+                  key={student.id}
+                  type="button"
+                  onClick={() => setTrackerStudent(student)}
+                  className="w-full text-left p-4 rounded-2xl border border-gray-200 bg-white hover:border-purple-300 hover:shadow-md transition-all"
+                >
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                        {student.name.charAt(0)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-gray-900 truncate">{student.name}</p>
+                        <p className="text-[11px] font-mono text-emerald-700">{student.studentId || 'MAAC-STU'}</p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-lg font-extrabold text-purple-700 leading-none">{report.overallCompletionPercentage}%</p>
+                      <p className="text-[10px] text-gray-500">{report.overallAttendedSessions}/{report.overallTotalSessions} sessions</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {report.softwares.map((sw) => (
+                      <span
+                        key={sw.softwareId}
+                        title={`${sw.softwareName}: ${sw.attendedSessions}/${sw.totalSessions} attended, ${sw.remainingSessions} remaining`}
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
+                          sw.status === 'completed'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : sw.status === 'in-progress'
+                              ? 'bg-amber-50 text-amber-700 border-amber-200'
+                              : 'bg-gray-50 text-gray-500 border-gray-200'
+                        }`}
+                      >
+                        {sw.softwareName.split(' ')[0]} {sw.attendedSessions}/{sw.totalSessions}
+                      </span>
+                    ))}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </Card>
 
       {/* TIMETABLE FIRST: Batch Schedule Overview with 3 Views */}
       <Card className="p-6">
@@ -1019,6 +1226,13 @@ export default function AcademicManagerDashboard() {
           })()}
         </Modal>
       )}
+
+      {/* Curriculum Tracker student drilldown: full session-by-session matrix */}
+      <StudentCurriculumModal
+        student={trackerStudent}
+        attendance={attendance}
+        onClose={() => setTrackerStudent(null)}
+      />
     </div>
   );
 }

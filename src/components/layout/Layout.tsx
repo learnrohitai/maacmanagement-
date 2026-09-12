@@ -7,8 +7,16 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useStore();
+  const { isAuthenticated, loadBatches } = useStore();
   const router = useRouter();
+
+  // Hydrate batches from MongoDB as soon as the user is authenticated so
+  // batches created on Vercel persist across reloads and sessions.
+  useEffect(() => {
+    if (isAuthenticated) {
+      void loadBatches();
+    }
+  }, [isAuthenticated, loadBatches]);
 
   useEffect(() => {
     if (!isAuthenticated) {

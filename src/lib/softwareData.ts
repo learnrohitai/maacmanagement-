@@ -672,3 +672,664 @@ export const getSoftwareTotalSessions = (softwareName?: string): number => {
   const item = findSoftwareDetails(softwareName);
   return item ? item.totalSessions : 16;
 };
+
+// =========================================================================
+// === COURSE DATABASE & SOFTWARE MAPPINGS (From Session Breakup.xlsx) ===
+// =========================================================================
+
+export interface CourseItem {
+  id: string;
+  name: string;
+  category: string;
+  duration: string;
+  badge?: string;
+  color?: string;
+  description: string;
+  softwares: string[];
+}
+
+export const COURSE_DATABASE: CourseItem[] = [
+  {
+    id: 'ad3d-edge',
+    name: 'AD3D EDGE',
+    category: '3D & Animation',
+    duration: '24 Months',
+    badge: 'Advanced 3D & Animation',
+    color: 'from-purple-500 to-indigo-600',
+    description: 'Comprehensive 3D Animation pipeline covering modeling, rigging, dynamics, texturing and Generative AI.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'After Effects - AFX',
+      'Adobe Audition',
+      'Maya Modeling',
+      'Autodesk 3ds Max',
+      'Substance 3D Painter',
+      'Unreal Engine',
+      'Maxon ZBrush',
+      'Generative AI for VFX & 3D'
+    ]
+  },
+  {
+    id: 'real-time-3d',
+    name: 'Real Time 3D',
+    category: 'Game Design & Real-Time',
+    duration: '18 Months',
+    badge: 'Real-Time & Unreal Engine',
+    color: 'from-cyan-500 to-blue-600',
+    description: 'Real-time rendering, interactive game environments, Maya, Substance Painter & Unreal Engine.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'After Effects - AFX',
+      'Adobe Audition',
+      'Maya Modeling',
+      'Substance 3D Painter',
+      'Unreal Engine',
+      'Maxon ZBrush',
+      'Generative AI for VFX & 3D'
+    ]
+  },
+  {
+    id: 'apdmc-2',
+    name: 'APDMC2.0',
+    category: 'Digital Media & Design',
+    duration: '24 Months',
+    badge: 'Advanced Digital Media Creation',
+    color: 'from-emerald-500 to-teal-600',
+    description: 'Complete digital multimedia design, UI/UX, video production, 3D motion, and web fundamentals.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'After Effects - AFX',
+      'Adobe Audition',
+      'Illustrator & InDesign',
+      'Figma - UI/UX Design',
+      'Adobe Lightroom',
+      'Substance 3D Painter',
+      'Maya Modeling',
+      'DaVinci Resolve',
+      'Generative AI for VFX & 3D'
+    ]
+  },
+  {
+    id: 'apdmd',
+    name: 'APDMD',
+    category: 'Digital Media & 2D',
+    duration: '18 Months',
+    badge: 'Advanced Digital Media Design',
+    color: 'from-pink-500 to-rose-600',
+    description: '2D animation, vector art, web design fundamentals, publication design, and interactive media.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'Adobe Audition',
+      'Illustrator & InDesign',
+      'Adobe Animate CC',
+      'Figma - UI/UX Design',
+      'Generative AI for VFX & 3D'
+    ]
+  },
+  {
+    id: 'advfx-plus',
+    name: 'ADVFX +',
+    category: 'VFX & Compositing',
+    duration: '24 Months',
+    badge: 'Advanced VFX Film Making',
+    color: 'from-amber-500 to-orange-600',
+    description: 'Master VFX pipeline: matchmoving, rotoscopy, node-based compositing, Houdini FX, Nuke and Maya.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'After Effects - AFX',
+      'Adobe Audition',
+      'Maya Modeling',
+      'Maya Rigging',
+      'Autodesk 3ds Max',
+      'Substance 3D Painter',
+      '3D Equalizer',
+      'DaVinci Resolve',
+      'Foundry Nuke',
+      'SideFX Houdini',
+      'Mocha Pro',
+      'Silhouette FX',
+      'Generative AI for VFX & 3D'
+    ]
+  },
+  {
+    id: 'vfx-plus',
+    name: 'VFX Plus',
+    category: 'VFX & Compositing',
+    duration: '18 Months',
+    badge: 'Professional Visual Effects',
+    color: 'from-blue-500 to-indigo-600',
+    description: 'Core visual effects compositing, live-action integration, 3D camera tracking, and roto-prep.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'After Effects - AFX',
+      'Adobe Audition',
+      'Maya Modeling',
+      'Substance 3D Painter',
+      'Foundry Nuke',
+      'Mocha Pro',
+      '3D Equalizer',
+      'Silhouette FX',
+      'Generative AI for VFX & 3D'
+    ]
+  },
+  {
+    id: 'adidg',
+    name: 'ADIDG',
+    category: 'Interactive Design & Games',
+    duration: '24 Months',
+    badge: 'Interactive Design & Games',
+    color: 'from-violet-500 to-purple-600',
+    description: 'Game design, 3D character asset creation, Unity/Unreal integration, and real-time interactive experiences.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'Adobe Audition',
+      'Maya Modeling',
+      'Autodesk 3ds Max',
+      'Substance 3D Painter',
+      'Illustrator & InDesign',
+      'Unreal Engine',
+      'Unity 3D',
+      'Adobe Animate CC',
+      'Maxon ZBrush',
+      'Generative AI for VFX & 3D'
+    ]
+  },
+  {
+    id: 'apgdi',
+    name: 'APGDI',
+    category: 'Game Design & Real-Time',
+    duration: '18 Months',
+    badge: 'Game Art & Design Integration',
+    color: 'from-teal-500 to-emerald-600',
+    description: 'Focused game art curriculum covering 3D props, high-to-low poly baking, texturing, and engine setup.',
+    softwares: [
+      'Photoshop - PS',
+      'Illustrator & InDesign',
+      'Adobe Audition',
+      'Maya Modeling',
+      'Autodesk 3ds Max',
+      'Substance 3D Painter',
+      'Maxon ZBrush',
+      'Unity 3D',
+      'Unreal Engine'
+    ]
+  },
+  {
+    id: 'mb-motion-cgpd',
+    name: 'MB COMBO(Motion GRAPHICS+CGPD)',
+    category: 'Motion Graphics & Print',
+    duration: '12 Months',
+    badge: 'Motion Graphics + Print Design',
+    color: 'from-red-500 to-orange-500',
+    description: 'Commercial motion graphics, broadcast title design, brand identity, and multi-page print publications.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'After Effects - AFX',
+      'Adobe Audition',
+      'Illustrator & InDesign',
+      'Adobe Lightroom'
+    ]
+  },
+  {
+    id: 'mb-dfm-cgpd',
+    name: 'MB COMBO(DFM+CGPD)',
+    category: 'Digital Filmmaking & Print',
+    duration: '14 Months',
+    badge: 'Digital Filmmaking + Print Combo',
+    color: 'from-yellow-500 to-amber-600',
+    description: 'Video production, audio mastering, typography, vector illustration, and generative AI creative suite.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'After Effects - AFX',
+      'Adobe Audition',
+      'Illustrator & InDesign',
+      'Adobe Lightroom',
+      'Generative AI for VFX & 3D'
+    ]
+  },
+  {
+    id: 'dfm',
+    name: 'DFM',
+    category: 'Audio & Video Editing',
+    duration: '10 Months',
+    badge: 'Digital Filmmaking Master',
+    color: 'from-indigo-500 to-purple-600',
+    description: 'Cinematic video editing, multi-track audio mixing, visual effects transitions, and modern Gen AI tools.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'After Effects - AFX',
+      'Adobe Audition',
+      'Generative AI for VFX & 3D'
+    ]
+  },
+  {
+    id: 'dgwa-plus',
+    name: 'DGWA+',
+    category: 'Digital Media & Design',
+    duration: '12 Months',
+    badge: 'Graphics, Web & Animation Plus',
+    color: 'from-sky-500 to-blue-600',
+    description: 'Print branding, web UI layout, vector animation, digital imaging, and frontend presentation.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'After Effects - AFX',
+      'Adobe Audition',
+      'Illustrator & InDesign',
+      'Adobe Lightroom',
+      'Adobe Animate CC',
+      'Figma - UI/UX Design',
+      'Generative AI for VFX & 3D'
+    ]
+  },
+  {
+    id: 'ui-ux-pro',
+    name: 'UI&UX Design Pro',
+    category: 'UI / UX & Web',
+    duration: '12 Months',
+    badge: 'UI & UX Design Master',
+    color: 'from-fuchsia-500 to-pink-600',
+    description: 'User research, wireframing, high-fidelity prototypes, design systems in Figma, and web deployment.',
+    softwares: [
+      'Photoshop - PS',
+      'Illustrator & InDesign',
+      'Figma - UI/UX Design',
+      'Generative AI for VFX & 3D'
+    ]
+  },
+  {
+    id: 'apmg',
+    name: 'APMG',
+    category: 'Motion Graphics',
+    duration: '12 Months',
+    badge: 'Advanced Program in Motion Graphics',
+    color: 'from-orange-500 to-rose-600',
+    description: '2D & 3D motion graphics, kinetic typography, character puppet rigging, broadcast packaging & Gen AI.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'After Effects - AFX',
+      'Adobe Audition',
+      'Illustrator & InDesign',
+      'Figma - UI/UX Design',
+      'Generative AI for VFX & 3D'
+    ]
+  },
+  {
+    id: 'apdmc-1',
+    name: 'APDMC1.0',
+    category: 'Digital Media & Design',
+    duration: '14 Months',
+    badge: 'Digital Media Creation Foundation',
+    color: 'from-cyan-500 to-teal-600',
+    description: 'Foundational graphic design, vector animation, video editing, audio sync, and 3D introduction.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'After Effects - AFX',
+      'Adobe Audition',
+      'Illustrator & InDesign',
+      'Adobe Lightroom',
+      'Adobe Animate CC',
+      'Maya Modeling',
+      'Figma - UI/UX Design'
+    ]
+  },
+  {
+    id: 'ppvp',
+    name: 'PPVP',
+    category: 'Audio & Video Editing',
+    duration: '12 Months',
+    badge: 'Program in Post Video Production',
+    color: 'from-emerald-500 to-green-600',
+    description: 'Non-linear video editing, color grading with DaVinci Resolve, motion graphics, and audio restoration.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'After Effects - AFX',
+      'Adobe Audition',
+      'Illustrator & InDesign',
+      'DaVinci Resolve',
+      'Generative AI for VFX & 3D'
+    ]
+  },
+  {
+    id: 'pmgdi',
+    name: 'PMGDI',
+    category: 'Game Design & Real-Time',
+    duration: '18 Months',
+    badge: 'Program in Modeling & Game Design',
+    color: 'from-purple-600 to-pink-600',
+    description: '3D environment modeling, Max/Maya asset creation, character sculpting, and game engine implementation.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Audition',
+      'Illustrator & InDesign',
+      'Autodesk 3ds Max',
+      'Substance 3D Painter',
+      'Maya Modeling',
+      'Maxon ZBrush',
+      'Unity 3D',
+      'Unreal Engine'
+    ]
+  },
+  {
+    id: 'dvp',
+    name: 'DVP',
+    category: '3D & Architectural',
+    duration: '8 Months',
+    badge: 'Digital Video & Architectural Viz',
+    color: 'from-amber-600 to-yellow-500',
+    description: '3D architectural visualization, spatial modeling in 3ds Max, V-Ray photorealistic lighting, and walk-throughs.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'Autodesk 3ds Max',
+      '3ds Max Lighting'
+    ]
+  },
+  {
+    id: 'caep-plus',
+    name: 'CAEP+',
+    category: 'VFX & Compositing',
+    duration: '12 Months',
+    badge: 'Compositing & Editing Plus',
+    color: 'from-blue-600 to-cyan-500',
+    description: 'High-end post production: multi-layer node compositing in Nuke, matchmoving in 3D Equalizer, and DaVinci color.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'After Effects - AFX',
+      'Adobe Audition',
+      'DaVinci Resolve',
+      'Mocha Pro',
+      'Silhouette FX',
+      'Foundry Nuke',
+      '3D Equalizer'
+    ]
+  },
+  {
+    id: '3d-game-art',
+    name: '3D Game art&Integration',
+    category: 'Game Design & Real-Time',
+    duration: '18 Months',
+    badge: '3D Game Art & Unreal Integration',
+    color: 'from-violet-600 to-indigo-600',
+    description: 'Next-gen game asset development: Maya hard-surface, ZBrush organic sculpting, PBR texturing, and Unreal Engine.',
+    softwares: [
+      'Photoshop - PS',
+      'Maya Modeling',
+      'Substance 3D Painter',
+      'Maxon ZBrush',
+      'Unreal Engine',
+      'Generative AI for VFX & 3D'
+    ]
+  },
+  {
+    id: 'cgpd-plus',
+    name: 'CGPD+',
+    category: '2D & Graphic Design',
+    duration: '6 Months',
+    badge: 'Certificate in Graphic & Print Design',
+    color: 'from-teal-600 to-cyan-600',
+    description: 'Core graphic design foundations, brand identities, raster manipulation, RAW grading, and prepress publishing.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Lightroom',
+      'Illustrator & InDesign'
+    ]
+  },
+  {
+    id: 'd3d',
+    name: 'D3D',
+    category: '3D & Animation',
+    duration: '12 Months',
+    badge: 'Diploma in 3D Animation',
+    color: 'from-pink-600 to-purple-600',
+    description: 'Essential 3D animation skills: Maya, 3ds Max, digital video editing, audio mixing, and PBR texturing.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'Adobe Audition',
+      'Maya Modeling',
+      'Autodesk 3ds Max',
+      'Substance 3D Painter'
+    ]
+  },
+  {
+    id: 'ui-ux-design',
+    name: 'UI&UX Design',
+    category: 'UI / UX & Web',
+    duration: '8 Months',
+    badge: 'UI & UX Design Fundamentals',
+    color: 'from-rose-500 to-pink-500',
+    description: 'Wireframing, UI component libraries, vector asset creation in Illustrator, and interactive Figma prototypes.',
+    softwares: [
+      'Photoshop - PS',
+      'Illustrator & InDesign',
+      'Figma - UI/UX Design'
+    ]
+  },
+  {
+    id: 'gen-ai-pro',
+    name: 'GEN AI PRO',
+    category: 'Generative AI',
+    duration: '6 Months',
+    badge: 'Generative AI Creative Pro',
+    color: 'from-purple-500 to-amber-500',
+    description: 'Master creative AI tools for digital artists: Midjourney, ComfyUI, ElevenLabs, Suno, Runway ML, and LLMs.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'After Effects - AFX',
+      'Adobe Audition',
+      'Generative AI for VFX & 3D'
+    ]
+  },
+  {
+    id: 'dafm',
+    name: 'DAFM',
+    category: '3D & Animation',
+    duration: '12 Months',
+    badge: 'Diploma in Animation Film Making',
+    color: 'from-orange-500 to-amber-500',
+    description: 'Classical & 3D animation filmmaking: Max, After Effects, Premiere, and audio design.',
+    softwares: [
+      'Photoshop - PS',
+      'Adobe Premiere',
+      'After Effects - AFX',
+      'Adobe Audition',
+      'Autodesk 3ds Max'
+    ]
+  }
+];
+
+// Helper: Get list of all course names
+export const getCourseList = (): string[] => {
+  return COURSE_DATABASE.map(c => c.name);
+};
+
+// Helper: Find course details by name (case-insensitive & fuzzy)
+export const findCourseDetails = (courseName?: string): CourseItem | undefined => {
+  if (!courseName) return undefined;
+  const clean = courseName.trim().toLowerCase();
+
+  const direct = COURSE_DATABASE.find(c => c.name.toLowerCase() === clean || c.id === clean);
+  if (direct) return direct;
+
+  const partial = COURSE_DATABASE.find(c =>
+    clean.includes(c.name.toLowerCase()) ||
+    c.name.toLowerCase().includes(clean) ||
+    (c.badge && c.badge.toLowerCase().includes(clean))
+  );
+  if (partial) return partial;
+
+  return undefined;
+};
+
+// Helper: Get softwares for a given course
+export const getSoftwaresForCourse = (courseName?: string): SoftwareItem[] => {
+  const course = findCourseDetails(courseName);
+  if (!course) return [];
+
+  const list: SoftwareItem[] = [];
+  course.softwares.forEach(swName => {
+    const sw = findSoftwareDetails(swName);
+    if (sw && !list.some(item => item.id === sw.id)) {
+      list.push(sw);
+    }
+  });
+  return list;
+};
+
+// Helper: Calculate full software-by-software & session progress for a student in a course
+export interface SoftwareProgressStat {
+  softwareName: string;
+  softwareId: string;
+  totalSessions: number;
+  attendedSessions: number;
+  remainingSessions: number;
+  completionRate: number; // percentage (0-100)
+  status: 'completed' | 'in-progress' | 'pending';
+  sessions: {
+    sessionNumber: number;
+    title: string;
+    description?: string;
+    status: 'present' | 'absent' | 'late' | 'pending';
+    date?: string;
+  }[];
+}
+
+export interface StudentCourseProgressReport {
+  courseName: string;
+  totalCourseSoftwares: number;
+  completedSoftwares: number;
+  inProgressSoftwares: number;
+  pendingSoftwares: number;
+  overallTotalSessions: number;
+  overallAttendedSessions: number;
+  overallRemainingSessions: number;
+  overallCompletionPercentage: number;
+  softwares: SoftwareProgressStat[];
+}
+
+export const calculateStudentCourseProgress = (
+  studentId: string,
+  courseName: string | undefined,
+  attendanceRecords: Array<{
+    studentId: string;
+    softwareName?: string;
+    topic?: string;
+    sessionNumber?: number;
+    status: 'present' | 'absent' | 'late';
+    date: string;
+    batchId?: string;
+  }>,
+  currentBatchCourse?: string
+): StudentCourseProgressReport => {
+  const courseSoftwares = getSoftwaresForCourse(courseName);
+  const studentAttendance = attendanceRecords.filter(a => a.studentId === studentId);
+
+  let overallTotal = 0;
+  let overallAttended = 0;
+  let completedCount = 0;
+  let inProgressCount = 0;
+  let pendingCount = 0;
+
+  const softwareStats: SoftwareProgressStat[] = courseSoftwares.map(sw => {
+    // Find all attendance marked for this software or matching software name/id
+    const swRecords = studentAttendance.filter(a => {
+      if (a.softwareName) {
+        const swItem = findSoftwareDetails(a.softwareName);
+        if (swItem && swItem.id === sw.id) return true;
+      }
+      return false;
+    });
+
+    const attendedSessionNums = new Set<number>();
+    const sessionStatusMap: Record<number, { status: 'present' | 'absent' | 'late'; date: string }> = {};
+
+    swRecords.forEach(rec => {
+      let sNum = rec.sessionNumber;
+      if (!sNum && rec.topic) {
+        const match = rec.topic.match(/Session\s+(\d+)/i);
+        if (match) sNum = parseInt(match[1]);
+      }
+      if (sNum) {
+        sessionStatusMap[sNum] = { status: rec.status, date: rec.date };
+        if (rec.status === 'present' || rec.status === 'late') {
+          attendedSessionNums.add(sNum);
+        }
+      }
+    });
+
+    const attended = attendedSessionNums.size;
+    const remaining = Math.max(0, sw.totalSessions - attended);
+    const completionRate = sw.totalSessions > 0 ? Math.round((attended / sw.totalSessions) * 100) : 0;
+
+    // Determine status
+    let status: 'completed' | 'in-progress' | 'pending' = 'pending';
+    if (attended >= sw.totalSessions) {
+      status = 'completed';
+      completedCount++;
+    } else if (attended > 0 || (currentBatchCourse && findSoftwareDetails(currentBatchCourse)?.id === sw.id)) {
+      status = 'in-progress';
+      inProgressCount++;
+    } else {
+      status = 'pending';
+      pendingCount++;
+    }
+
+    overallTotal += sw.totalSessions;
+    overallAttended += attended;
+
+    const sessions = sw.sessions.map(s => {
+      const record = sessionStatusMap[s.sessionNumber];
+      const sessionStatus: 'present' | 'absent' | 'late' | 'pending' = record ? record.status : 'pending';
+      return {
+        sessionNumber: s.sessionNumber,
+        title: s.title,
+        description: s.description,
+        status: sessionStatus,
+        date: record ? record.date : undefined
+      };
+    });
+
+    return {
+      softwareName: sw.name,
+      softwareId: sw.id,
+      totalSessions: sw.totalSessions,
+      attendedSessions: attended,
+      remainingSessions: remaining,
+      completionRate,
+      status,
+      sessions
+    };
+  });
+
+  const overallRemaining = Math.max(0, overallTotal - overallAttended);
+  const overallCompletionPercentage = overallTotal > 0 ? Math.round((overallAttended / overallTotal) * 100) : 0;
+
+  return {
+    courseName: courseName || 'Unassigned Course',
+    totalCourseSoftwares: courseSoftwares.length,
+    completedSoftwares: completedCount,
+    inProgressSoftwares: inProgressCount,
+    pendingSoftwares: pendingCount,
+    overallTotalSessions: overallTotal,
+    overallAttendedSessions: overallAttended,
+    overallRemainingSessions: overallRemaining,
+    overallCompletionPercentage,
+    softwares: softwareStats
+  };
+};

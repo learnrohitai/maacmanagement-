@@ -21,44 +21,9 @@ import {
   BookOpen
 } from 'lucide-react';
 import { User as UserType, StudentStatus } from '@/types';
+import { COURSE_DATABASE, findCourseDetails, getSoftwaresForCourse } from '@/lib/softwareData';
 
-const COURSES = [
-  {
-    id: 'Animation',
-    name: '3D Animation Film Making',
-    badge: 'ADVFX+ / Maya',
-    duration: '24 Months',
-    color: 'from-purple-500 to-indigo-600'
-  },
-  {
-    id: 'VFX',
-    name: 'VFX & Compositing Professional',
-    badge: 'Nuke / Houdini',
-    duration: '18 Months',
-    color: 'from-cyan-500 to-blue-600'
-  },
-  {
-    id: 'Game Design',
-    name: 'Game Art, Design & Unreal Engine',
-    badge: 'Unreal / Unity',
-    duration: '18 Months',
-    color: 'from-emerald-500 to-teal-600'
-  },
-  {
-    id: 'Graphic Design',
-    name: 'Graphic Design & UI/UX Master',
-    badge: 'Figma / Adobe Suite',
-    duration: '12 Months',
-    color: 'from-pink-500 to-rose-600'
-  },
-  {
-    id: 'Motion Graphics',
-    name: 'Motion Graphics & Broadcast Design',
-    badge: 'After Effects / Cinema 4D',
-    duration: '12 Months',
-    color: 'from-amber-500 to-orange-600'
-  }
-];
+const COURSES = COURSE_DATABASE;
 
 const AVAILABLE_DOCUMENTS = [
   { id: '10th Marksheet', label: '10th Standard Marksheet / Secondary Certificate' },
@@ -88,7 +53,7 @@ export default function NewAdmissionPage() {
     parentContact: '',
     parentEmail: '',
     address: 'Mumbai, Maharashtra',
-    course: 'Animation',
+    course: COURSE_DATABASE[0].name,
     admissionDate: new Date().toISOString().split('T')[0],
     counselorName: currentUser?.name || 'Priya Sharma',
     counselorId: currentUser?.id || '8',
@@ -464,25 +429,25 @@ export default function NewAdmissionPage() {
 
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-3">
-                Select Enrolled Course Program *
+                Select Enrolled Course Program * ({COURSES.length} Official MAAC Courses)
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-h-96 overflow-y-auto pr-1">
                 {COURSES.map((c) => {
-                  const isSelected = formData.course === c.id;
+                  const isSelected = formData.course === c.name;
                   return (
                     <div
                       key={c.id}
-                      onClick={() => handleSelectCourse(c.id)}
+                      onClick={() => handleSelectCourse(c.name)}
                       className={`p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200 flex flex-col justify-between ${
                         isSelected
-                          ? 'border-emerald-600 bg-emerald-50/50 shadow-md ring-2 ring-emerald-500/20'
-                          : 'border-gray-200 bg-white hover:border-gray-300'
+                          ? 'border-emerald-600 bg-emerald-50/70 shadow-md ring-2 ring-emerald-500/20'
+                          : 'border-gray-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/30'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
                           <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
-                            {c.badge}
+                            {c.category}
                           </span>
                           <h4 className="font-bold text-gray-900 text-sm mt-1">{c.name}</h4>
                         </div>
@@ -494,14 +459,39 @@ export default function NewAdmissionPage() {
                           {isSelected && <Check className="w-3.5 h-3.5" />}
                         </div>
                       </div>
+                      <p className="text-xs text-gray-500 line-clamp-2 mb-2">{c.description}</p>
                       <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
                         <span>Duration: <strong>{c.duration}</strong></span>
-                        <span className="font-bold text-gray-900 font-mono">{c.duration}</span>
+                        <span className="font-bold text-emerald-800">{c.softwares.length} Softwares</span>
                       </div>
                     </div>
                   );
                 })}
               </div>
+
+              {/* Selected Course Softwares Preview */}
+              {(() => {
+                const selectedDetails = findCourseDetails(formData.course);
+                if (!selectedDetails) return null;
+                return (
+                  <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-cyan-50 border border-emerald-200 text-xs shadow-sm">
+                    <p className="font-bold text-emerald-950 mb-2 flex items-center gap-2 text-sm">
+                      <Sparkles className="w-4 h-4 text-emerald-600" />
+                      {selectedDetails.name} — Required Software Modules ({selectedDetails.softwares.length} Total Softwares):
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedDetails.softwares.map((sw, idx) => (
+                        <span
+                          key={idx}
+                          className="px-3 py-1 rounded-xl bg-white border border-emerald-200 text-emerald-900 font-semibold text-xs shadow-xs"
+                        >
+                          {sw}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

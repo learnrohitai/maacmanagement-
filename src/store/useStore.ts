@@ -1,3 +1,5 @@
+'use client';
+
 import { create } from 'zustand';
 import { User, UserRole, Batch, Attendance, LessonPlan, StudentProgress, FeeRecord, DashboardStats, InquiryLead } from '@/types';
 import { mockUsers, mockBatches, mockAttendance, mockLessonPlans, mockStudentProgress, mockFeeRecords, mockDashboardStats, mockInquiries } from '@/lib/mockData';
@@ -20,6 +22,10 @@ interface AppState {
   feeRecords: FeeRecord[];
   dashboardStats: DashboardStats;
   inquiries: InquiryLead[];
+
+  // DB sync
+  batchesLoadedFromDb: boolean;
+  loadBatches: () => Promise<void>;
 
   // Actions
   addBatch: (batch: Batch) => void;
@@ -48,6 +54,32 @@ interface AppState {
   deleteStudent: (id: string) => void;
   assignBatchToStudent: (studentId: string, batchId: string) => void;
   changeStudentBatch: (studentId: string, fromBatchId: string, toBatchId: string, reason?: string) => void;
+}
+
+// Batch ids generated locally (Date.now()) are replaced by Mongo _ids after save.
+// This map bridges the local id -> Mongo id so subsequent updates target the DB doc.
+const pendingBatchIdMap = new Map<string, string>();
+// Batch ids deleted locally while their create-request is still in flight.
+// When the create resolves we must also remove the doc from the DB.
+const cancelledBatchIds = new Set<string>();
+
+async function apiCreateBatch(batch: Batch): Promise<string | null> {
+  try {
+    const res = await fetch('/api/batches', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(batch),
+    });
+    const data = (await res.json().catch(() => ({}))) as { batch?: { _id?: string } ; message?: string };
+    if (!res.ok || !data.batch?._id) {
+      console.error('Batch save failed:', data.message || res.status);
+      return null;
+    }
+    return String(data.batch._id);
+  } catch (e) {
+    console.error('Batch save failed:', e);
+    return null;
+  }
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -81,14 +113,109 @@ export const useStore = create<AppState>((set, get) => ({
   dashboardStats: mockDashboardStats,
   inquiries: mockInquiries,
 
-  // Batch Actions
-  addBatch: (batch) => set((state) => ({ batches: [...state.batches, batch] })),
-  updateBatch: (id, updates) => set((state) => ({
-    batches: state.batches.map(b => b.id === id ? { ...b, ...updates } : b)
-  })),
-  deleteBatch: (id) => set((state) => ({
-    batches: state.batches.filter(b => b.id !== id)
-  })),
+  // DB sync
+  batchesLoadedFromDb: false,
+  loadBatches: async () => {
+    if (get().batchesLoadedFromDb) return;
+    try {
+      const res = await fetch('/api/batches');
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        batches?: Array<Record<string, unknown> & { _id?: string }>;
+      };
+      const dbBatches: Batch[] = (data.batches || []).map((b) => {
+        const { _id, ...rest } = b;
+        return {
+          ...(rest as unknown as Batch),
+          id: String(_id ?? rest.id ?? ''),
+        };
+      });
+      // Merge: keep local (mock) batches not yet in the DB, then DB batches.
+      // Local batches created before persistence existed remain visible.
+      const dbIds = new Set(dbBatches.map((b) => b.id));
+      const localOnly = mockBatches.filter((mb) => !dbIds.has(mb.id) && !mb.id.startsWith('local-'));
+      set({ batches: [...dbBatches, ...localOnly], batchesLoadedFromDb: true });
+    } catch {
+      // DB unreachable — keep working with mock data
+    }
+  },
+
+  // Batch Actions — optimistic local update + best-effort MongoDB persistence
+  addBatch: (batch) => {
+    const localId = batch.id.startsWith('mongo-') ? batch.id.slice(6) : batch.id;
+    // Optimistic local insert
+    set((state) => ({ batches: [...state.batches, { ...batch, id: localId }] }));
+
+    void (async () => {
+      const mongoId = await apiCreateBatch({ ...batch, id: localId });
+      if (cancelledBatchIds.has(localId)) {
+        // The batch was rolled back locally while the create was in flight —
+        // make sure the DB doc is removed too.
+        cancelledBatchIds.delete(localId);
+        if (mongoId) {
+          void fetch(`/api/batches?id=${encodeURIComponent(mongoId)}`, { method: 'DELETE' }).catch(() => undefined);
+        }
+        return;
+      }
+      if (mongoId) {
+        pendingBatchIdMap.set(localId, mongoId);
+        set((state) => ({
+          batches: state.batches.map((b) => (b.id === localId ? { ...b, id: mongoId } : b)),
+        }));
+      }
+    })();
+  },
+
+  updateBatch: (id, updates) => {
+    const dbId = pendingBatchIdMap.get(id) ?? id;
+    set((state) => ({
+      batches: state.batches.map(b => b.id === id ? { ...b, ...updates } : b)
+    }));
+
+    void (async () => {
+      try {
+        const res = await fetch(`/api/batches?id=${encodeURIComponent(dbId)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+        });
+        if (!res.ok) {
+          const data = (await res.json().catch(() => ({}))) as { message?: string };
+          console.error('Batch update failed:', data.message || res.status);
+        }
+      } catch (e) {
+        console.error('Batch update failed:', e);
+      }
+    })();
+  },
+
+  deleteBatch: (id) => {
+    const dbId = pendingBatchIdMap.get(id) ?? id;
+    set((state) => ({
+      batches: state.batches.filter(b => b.id !== id)
+    }));
+
+    // If the create-request is still in flight, remember the cancellation so the
+    // in-flight create can clean up after itself when it resolves.
+    cancelledBatchIds.add(id);
+
+    void (async () => {
+      try {
+        const res = await fetch(`/api/batches?id=${encodeURIComponent(dbId)}`, {
+          method: 'DELETE',
+        });
+        if (!res.ok && res.status !== 404) {
+          const data = (await res.json().catch(() => ({}))) as { message?: string };
+          console.error('Batch delete failed:', data.message || res.status);
+          return;
+        }
+        pendingBatchIdMap.delete(id);
+        cancelledBatchIds.delete(id);
+      } catch (e) {
+        console.error('Batch delete failed:', e);
+      }
+    })();
+  },
 
   // Attendance Actions
   addAttendance: (attendance) => set((state) => ({
@@ -216,8 +343,10 @@ export const useStore = create<AppState>((set, get) => ({
       return u;
     });
 
+    let touchedBatchIds: string[] = [];
     const updatedBatches = state.batches.map(b => {
       if (b.id === batchId && !b.studentIds.includes(studentId)) {
+        touchedBatchIds.push(b.id);
         return {
           ...b,
           enrolledStudents: b.enrolledStudents + 1,
@@ -225,6 +354,20 @@ export const useStore = create<AppState>((set, get) => ({
         };
       }
       return b;
+    });
+
+    touchedBatchIds.forEach((bid) => {
+      const updated = updatedBatches.find(b => b.id === bid);
+      if (updated) {
+        void fetch(`/api/batches?id=${encodeURIComponent(bid)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            studentIds: updated.studentIds,
+            enrolledStudents: updated.enrolledStudents,
+          }),
+        }).catch(() => undefined);
+      }
     });
 
     return {
@@ -251,6 +394,7 @@ export const useStore = create<AppState>((set, get) => ({
       return u;
     });
 
+    const touchedBatchIds: string[] = [fromBatchId, toBatchId];
     const updatedBatches = state.batches.map(b => {
       // Remove from old batch
       if (b.id === fromBatchId) {
@@ -271,6 +415,20 @@ export const useStore = create<AppState>((set, get) => ({
         };
       }
       return b;
+    });
+
+    touchedBatchIds.filter(Boolean).forEach((bid) => {
+      const updated = updatedBatches.find(b => b.id === bid);
+      if (updated) {
+        void fetch(`/api/batches?id=${encodeURIComponent(bid)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            studentIds: updated.studentIds,
+            enrolledStudents: updated.enrolledStudents,
+          }),
+        }).catch(() => undefined);
+      }
     });
 
     return {

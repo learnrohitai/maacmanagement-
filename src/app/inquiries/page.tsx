@@ -26,6 +26,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { InquiryLead } from '@/types';
+import { COURSE_DATABASE, getCourseList } from '@/lib/softwareData';
 
 export default function InquiriesPage() {
   const { inquiries, addInquiry, updateInquiry, deleteInquiry } = useStore();
@@ -41,7 +42,7 @@ export default function InquiriesPage() {
     studentName: '',
     phone: '',
     email: '',
-    interestedCourse: 'Animation',
+    interestedCourse: COURSE_DATABASE[0].name,
     source: 'Walk-in' as InquiryLead['source'],
     notes: '',
     followUpDate: new Date().toISOString().split('T')[0],
@@ -158,12 +159,12 @@ export default function InquiriesPage() {
             onChange={(e) => setCourseFilter(e.target.value)}
             className="w-full text-sm border border-gray-200 rounded-xl px-3 py-2 bg-gray-50 text-gray-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
-            <option value="all">All Programs</option>
-            <option value="Animation">3D Animation</option>
-            <option value="VFX">VFX & Compositing</option>
-            <option value="Game Design">Game Art & Design</option>
-            <option value="Graphic Design">Graphic Design</option>
-            <option value="Motion Graphics">Motion Graphics</option>
+            <option value="all">All Official Programs ({COURSE_DATABASE.length})</option>
+            {COURSE_DATABASE.map((c) => (
+              <option key={c.id} value={c.name}>
+                {c.name} ({c.category})
+              </option>
+            ))}
           </select>
         </div>
       </Card>
@@ -351,11 +352,11 @@ export default function InquiriesPage() {
                 onChange={(e) => setFormData({ ...formData, interestedCourse: e.target.value })}
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-purple-500 outline-none text-sm text-gray-900"
               >
-                <option value="Animation">3D Animation</option>
-                <option value="VFX">VFX & Compositing</option>
-                <option value="Game Design">Game Art & Design</option>
-                <option value="Graphic Design">Graphic Design</option>
-                <option value="Motion Graphics">Motion Graphics</option>
+                {COURSE_DATABASE.map((c) => (
+                  <option key={c.id} value={c.name}>
+                    {c.name} ({c.category})
+                  </option>
+                ))}
               </select>
             </div>
 

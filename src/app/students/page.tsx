@@ -28,10 +28,13 @@ import {
   ArrowLeftRight
 } from 'lucide-react';
 import { StudentStatus, User as UserType } from '@/types';
+import { useStore as useStoreHook } from '@/store/useStore';
+import StudentSyllabusProgress from '@/components/curriculum/StudentSyllabusProgress';
 
 export default function StudentsPage() {
   const router = useRouter();
   const { students, batches, deleteStudent, changeStudentBatch, currentUser } = useStore();
+  const attendanceRecords = useStoreHook((s) => s.attendance);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [courseFilter, setCourseFilter] = useState<string>('all');
@@ -396,6 +399,16 @@ export default function StudentsPage() {
               <p className="text-xs text-gray-700 bg-gray-50 p-3 rounded-xl italic">
                 &ldquo;{selectedStudent.remarks || 'Standard enrollment.'}&rdquo;
               </p>
+            </div>
+
+            {/* Course Syllabus & Software Progress */}
+            <div>
+              <p className="text-xs font-bold text-gray-600 mb-1.5 uppercase">Course Syllabus & Software Progress</p>
+              <StudentSyllabusProgress
+                studentId={selectedStudent.id}
+                courseName={selectedStudent.course}
+                attendance={attendanceRecords}
+              />
             </div>
 
             <div className="flex justify-end pt-3 border-t">

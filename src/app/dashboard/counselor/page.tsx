@@ -27,6 +27,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { StudentStatus, User as UserType } from '@/types';
+import { COURSE_DATABASE } from '@/lib/softwareData';
 
 export default function CounselorDashboard() {
   const router = useRouter();
@@ -46,10 +47,10 @@ export default function CounselorDashboard() {
     },
     {
       title: 'Enrolled Courses',
-      value: '5 Programs',
+      value: `${COURSE_DATABASE.length} Programs`,
       icon: <BookOpen className="w-6 h-6" />,
       color: 'cyan' as const,
-      trend: 'Animation, VFX, Gaming...'
+      trend: 'AD3D EDGE, ADVFX+, Real-Time 3D...'
     },
     {
       title: 'Admission Status',

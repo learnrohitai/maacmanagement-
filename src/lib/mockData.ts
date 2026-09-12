@@ -1,5 +1,5 @@
 import { User, Batch, Attendance, LessonPlan, StudentProgress, FeeRecord, DashboardStats, InquiryLead } from '@/types';
-import { getSoftwareList } from '@/lib/softwareData';
+import { getSoftwareList, getCourseList } from '@/lib/softwareData';
 
 export const mockUsers: User[] = [
   {
@@ -1044,7 +1044,7 @@ export const mockDashboardStats: DashboardStats = {
 };
 
 export const softwareOptions = getSoftwareList();
-export const courseOptions = getSoftwareList();
+export const courseOptions = getCourseList();
 
 export const timeSlots = [
   '09:00-12:00',

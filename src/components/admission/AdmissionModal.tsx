@@ -23,6 +23,7 @@ import {
   Check
 } from 'lucide-react';
 import { User as UserType, StudentStatus } from '@/types';
+import { COURSE_DATABASE, findCourseDetails, getSoftwaresForCourse } from '@/lib/softwareData';
 
 interface AdmissionModalProps {
   isOpen: boolean;
@@ -45,13 +46,7 @@ const AVAILABLE_DOCUMENTS = [
   { id: 'Portfolio / Previous Work', label: 'Creative Portfolio / Artwork / Showreel' }
 ];
 
-const COURSES = [
-  { id: 'Animation', name: '3D Animation Film Making (ADVFX+ / Maya)', duration: '24 Months' },
-  { id: 'VFX', name: 'VFX & Compositing Professional (Nuke / Houdini)', duration: '18 Months' },
-  { id: 'Game Design', name: 'Game Art, Design & Unreal Engine', duration: '18 Months' },
-  { id: 'Graphic Design', name: 'Graphic Design, UI/UX & Web Master', duration: '12 Months' },
-  { id: 'Motion Graphics', name: 'Motion Graphics & Broadcast Design', duration: '12 Months' }
-];
+const COURSES = COURSE_DATABASE;
 
 export default function AdmissionModal({ isOpen, onClose, initialLead }: AdmissionModalProps) {
   const { addStudent, currentUser } = useStore();
@@ -65,7 +60,7 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
     parentContact: '',
     dob: '2005-01-15',
     studentId: `MAAC-2026-${Math.floor(100 + Math.random() * 900)}`,
-    course: initialLead?.interestedCourse || 'Animation',
+    course: initialLead?.interestedCourse || COURSE_DATABASE[0].name,
     admissionDate: new Date().toISOString().split('T')[0],
     counselorName: currentUser?.name || 'Priya Sharma',
     counselorId: currentUser?.id || '8',
@@ -337,38 +332,68 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
                   </div>
 
                   {/* Course Selector Grid */}
+                  {/* Course Selector Grid */}
                   <div>
                     <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                      Selected Course Program *
+                      Selected Course Program * ({COURSES.length} Official MAAC Courses)
                     </label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-64 overflow-y-auto pr-1">
                       {COURSES.map((course) => {
-                        const isSelected = formData.course === course.id;
+                        const isSelected = formData.course === course.name;
                         return (
                           <div
                             key={course.id}
-                            onClick={() => setFormData({ ...formData, course: course.id })}
-                            className={`p-3.5 rounded-2xl border-2 cursor-pointer transition-all ${
+                            onClick={() => setFormData({ ...formData, course: course.name })}
+                            className={`p-3 rounded-2xl border-2 cursor-pointer transition-all ${
                               isSelected
-                                ? 'border-emerald-600 bg-emerald-50/60 shadow-sm'
-                                : 'border-gray-200 bg-white hover:border-gray-300'
+                                ? 'border-emerald-600 bg-emerald-50/70 shadow-sm ring-2 ring-emerald-500/20'
+                                : 'border-gray-200 bg-white hover:border-emerald-200 hover:bg-emerald-50/20'
                             }`}
                           >
-                            <div className="flex items-center justify-between">
-                              <span className="font-bold text-sm text-gray-900">{course.name}</span>
+                            <div className="flex items-start justify-between gap-2">
+                              <div>
+                                <span className="font-bold text-sm text-gray-900 block">{course.name}</span>
+                                <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-100/60 px-2 py-0.5 rounded-md inline-block mt-1">
+                                  {course.category} • {course.duration}
+                                </span>
+                              </div>
                               <div
-                                className={`w-5 h-5 rounded-full border flex items-center justify-center ${
+                                className={`w-5 h-5 rounded-full border shrink-0 flex items-center justify-center ${
                                   isSelected ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-gray-300'
                                 }`}
                               >
                                 {isSelected && <Check className="w-3.5 h-3.5" />}
                               </div>
                             </div>
-                            <span className="text-[11px] text-gray-500 mt-1 block">Duration: {course.duration}</span>
+                            <p className="text-[11px] text-gray-500 mt-1.5 line-clamp-1">{course.description}</p>
                           </div>
                         );
                       })}
                     </div>
+
+                    {/* Selected Course Softwares Preview */}
+                    {(() => {
+                      const selectedDetails = findCourseDetails(formData.course);
+                      if (!selectedDetails) return null;
+                      return (
+                        <div className="mt-3 p-3.5 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 text-xs">
+                          <p className="font-bold text-emerald-900 mb-1.5 flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                            {selectedDetails.name} — Included Software Curriculum ({selectedDetails.softwares.length} Softwares):
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {selectedDetails.softwares.map((sw, idx) => (
+                              <span
+                                key={idx}
+                                className="px-2 py-0.5 rounded-md bg-white border border-emerald-200 text-emerald-800 font-medium text-[11px]"
+                              >
+                                {sw}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
