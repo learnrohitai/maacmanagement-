@@ -26,6 +26,7 @@ import {
   ArrowRight,
   CheckCircle2,
   ShieldAlert,
+  ShieldCheck,
   ClipboardCheck,
   Layers,
   ListOrdered
@@ -319,10 +320,17 @@ export default function BatchesPage() {
           <h1 className="text-3xl font-bold text-gray-900">Batch Management & Scheduling</h1>
           <p className="text-gray-500 mt-1">Configure class batches, transfer students, assign lab rooms, and schedule practice classes</p>
         </div>
-        <Button onClick={() => { resetForm(); setIsModalOpen(true); }}>
-          <Plus className="w-5 h-5 mr-2" />
-          Create New Batch
-        </Button>
+        {(currentUser?.role === 'admin' || currentUser?.role === 'academic-manager') ? (
+          <Button onClick={() => { resetForm(); setIsModalOpen(true); }}>
+            <Plus className="w-5 h-5 mr-2" />
+            Create New Batch
+          </Button>
+        ) : (
+          <span className="inline-flex items-center gap-2 text-xs font-semibold text-gray-500 bg-gray-100 px-4 py-2.5 rounded-xl">
+            <ShieldCheck className="w-4 h-4" />
+            Batches are created by the Academic Manager
+          </span>
+        )}
       </motion.div>
 
       {/* Filters */}

@@ -1430,6 +1430,7 @@ export default function AcademicManagerDashboard() {
                       <th className="py-2.5 px-3 font-semibold">Student ID</th>
                       <th className="py-2.5 px-3 font-semibold">Course Enrolled</th>
                       <th className="py-2.5 px-3 font-semibold">Admission Date</th>
+                      <th className="py-2.5 px-3 font-semibold">Enrolled By (Counselor)</th>
                       <th className="py-2.5 px-3 font-semibold">Status</th>
                       <th className="py-2.5 px-3 font-semibold">Average Grade</th>
                       <th className="py-2.5 px-3 font-semibold">Attendance %</th>
@@ -1451,6 +1452,11 @@ export default function AcademicManagerDashboard() {
                           {s.course || 'N/A'}
                         </td>
                         <td className="py-2.5 px-3 text-xs text-gray-600">{s.admissionDate || s.joinDate}</td>
+                        <td className="py-2.5 px-3">
+                          <span className="text-xs font-semibold text-cyan-800 bg-cyan-50 border border-cyan-200/70 px-2 py-0.5 rounded-md">
+                            {s.counselorName || '—'}
+                          </span>
+                        </td>
                         <td className="py-2.5 px-3">
                           <Badge variant={s.studentStatus === 'Active' ? 'success' : 'warning'}>
                             {s.studentStatus || 'Active'}
