@@ -17,7 +17,7 @@ import Button from '@/components/ui/Button';
 import Input, { Select } from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Table';
-import { CloudUpload, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import { CloudUpload, CheckCircle2, AlertTriangle, Loader2, Lock } from 'lucide-react';
 import {
   Calendar,
   CheckCircle,
@@ -35,7 +35,7 @@ import {
 } from 'lucide-react';
 
 function AttendanceContent() {
-  const { currentUser, attendance, batches, users, addAttendance, updateAttendance } = useStore();
+  const { currentUser, attendance, batches, users, addAttendance, updateAttendance, submittedAttendanceKeys, markAttendanceSubmitted } = useStore();
   const searchParams = useSearchParams();
   const preselectedBatchId = searchParams.get('batch') || '';
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -65,6 +65,14 @@ function AttendanceContent() {
 
   const activeBatchId = selectedBatch || (myBatches.length > 0 ? myBatches[0].id : '');
   const activeBatch = myBatches.find(b => b.id === activeBatchId);
+
+  // ===== Attendance lock =====
+  // Teachers (and other roles) can mark/adjust attendance freely UNTIL it is submitted.
+  // Once submitted for a batch+date, it is locked for everyone except the Academic Manager.
+  const canEditAttendance = currentUser?.role === 'teacher' || currentUser?.role === 'academic-manager';
+  const attendanceLockKey = activeBatchId ? `${activeBatchId}|${selectedDate}` : '';
+  const isAttendanceSubmitted = attendanceLockKey !== '' && submittedAttendanceKeys.includes(attendanceLockKey);
+  const canAdjustAttendance = canEditAttendance && (!isAttendanceSubmitted || currentUser?.role === 'academic-manager');
 
   // Load software details and exact session breakdown for this active batch
   const activeSoftware = useMemo(() => {
@@ -161,6 +169,8 @@ function AttendanceContent() {
     grade?: string
   ) => {
     if (!activeBatch) return;
+    // Submitted attendance is locked — only the Academic Manager may re-adjust it
+    if (isAttendanceSubmitted && currentUser?.role !== 'academic-manager') return;
 
     const topicToSave = topic || selectedTopic || (softwareSessions[0] ? `Session ${softwareSessions[0].sessionNumber}: ${softwareSessions[0].title}` : '');
     const sessionNumMatch = topicToSave.match(/Session\s+(\d+)/i);
@@ -259,6 +269,8 @@ function AttendanceContent() {
     setIsSubmitting(false);
 
     if (ok) {
+      // Lock this batch+date from further edits (Academic Manager can still override)
+      if (attendanceLockKey) markAttendanceSubmitted(attendanceLockKey);
       setShowSubmitSuccess(true);
       setTimeout(() => setShowSubmitSuccess(false), 3000);
     } else {
@@ -449,8 +461,13 @@ function AttendanceContent() {
                       <button
                         key={session.sessionNumber}
                         type="button"
-                        onClick={() => handleSelectSessionTopic(sessionTopicStr)}
+                        disabled={!canAdjustAttendance}
+                        onClick={() => {
+                          if (!canAdjustAttendance) return;
+                          handleSelectSessionTopic(sessionTopicStr);
+                        }}
                         className={`group shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 border ${
+                          !canAdjustAttendance ? 'cursor-not-allowed opacity-60 ' : ''}${
                           isSelected
                             ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-200 ring-2 ring-purple-400/40'
                             : isCovered
@@ -509,20 +526,25 @@ function AttendanceContent() {
                 </Card>
               </motion.div>
             ))}
-          </div>
-
-          {/* Quick Actions */}
+          </div>          {/* Quick Actions */}
           {currentUser?.role === 'teacher' && (
             <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <Button variant="outline" onClick={markAllPresent}>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Mark All Present
-                </Button>
-                <Button
-                  onClick={handleSubmitAttendance}
-                  isLoading={isSubmitting || dbSaving}
-                >
+              {isAttendanceSubmitted && (
+                <div className="flex items-center gap-2 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5">
+                  <Lock className="w-4 h-4 shrink-0" />
+                  Attendance for this batch &amp; date has been submitted and is locked. Only the Academic Manager can re-adjust it.
+                </div>
+              )}
+              {canAdjustAttendance && (
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button variant="outline" onClick={markAllPresent}>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Mark All Present
+                  </Button>
+                  <Button
+                    onClick={handleSubmitAttendance}
+                    isLoading={isSubmitting || dbSaving}
+                  >
                   {showSubmitSuccess || saveState === 'saved' ? (
                     <>
                       <CheckCircle className="w-4 h-4 mr-2" />
@@ -538,7 +560,8 @@ function AttendanceContent() {
                     </>
                   )}
                 </Button>
-              </div>
+                </div>
+              )}
 
               {/* Save status feedback */}
               <AnimatePresence>
@@ -651,6 +674,7 @@ function AttendanceContent() {
                             <td className="px-6 py-4 whitespace-nowrap">
                               {topicOptions.length > 0 ? (
                                 <select
+                                  disabled={!canAdjustAttendance}
                                   value={studentTopics[student.id] || attendanceRecord?.topic || selectedTopic || ''}
                                   onChange={(e) => {
                                     const val = e.target.value;
@@ -682,6 +706,7 @@ function AttendanceContent() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                               <button
+                                disabled={!canAdjustAttendance}
                                 onClick={() => {
                                   const newVal = !(studentAssignments[student.id] ?? attendanceRecord?.assignmentSubmitted ?? false);
                                   setStudentAssignments(prev => ({ ...prev, [student.id]: newVal }));
@@ -708,6 +733,7 @@ function AttendanceContent() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                               <select
+                                disabled={!canAdjustAttendance}
                                 value={studentGrades[student.id] || attendanceRecord?.grade || ''}
                                 onChange={(e) => {
                                   const val = e.target.value;
@@ -741,6 +767,7 @@ function AttendanceContent() {
                                 {(['present', 'absent', 'late'] as const).map(s => (
                                   <button
                                     key={s}
+                                    disabled={!canAdjustAttendance}
                                     onClick={() => handleMarkAttendance(
                                       student.id,
                                       student.name,

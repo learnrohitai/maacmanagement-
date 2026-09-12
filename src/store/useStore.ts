@@ -27,6 +27,11 @@ interface AppState {
   batchesLoadedFromDb: boolean;
   loadBatches: () => Promise<void>;
 
+  // Attendance lock: keys are `${batchId}|${date}`. Once submitted, attendance is
+  // locked — only the academic-manager role may re-adjust it.
+  submittedAttendanceKeys: string[];
+  markAttendanceSubmitted: (key: string) => void;
+
   // Actions
   addBatch: (batch: Batch) => void;
   updateBatch: (id: string, batch: Partial<Batch>) => void;
@@ -54,6 +59,29 @@ interface AppState {
   deleteStudent: (id: string) => void;
   assignBatchToStudent: (studentId: string, batchId: string) => void;
   changeStudentBatch: (studentId: string, fromBatchId: string, toBatchId: string, reason?: string) => void;
+}
+
+// Attendance lock persistence (survives reloads in this browser).
+const SUBMITTED_ATTENDANCE_STORAGE_KEY = 'maac-submitted-attendance-keys';
+
+function loadSubmittedAttendanceKeys(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(SUBMITTED_ATTENDANCE_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((k): k is string => typeof k === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistSubmittedAttendanceKeys(keys: string[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(SUBMITTED_ATTENDANCE_STORAGE_KEY, JSON.stringify(keys));
+  } catch {
+    // storage unavailable (private mode etc.) — lock applies for this session only
+  }
 }
 
 // Batch ids generated locally (Date.now()) are replaced by Mongo _ids after save.
@@ -216,6 +244,15 @@ export const useStore = create<AppState>((set, get) => ({
       }
     })();
   },
+
+  // Attendance lock
+  submittedAttendanceKeys: loadSubmittedAttendanceKeys(),
+  markAttendanceSubmitted: (key) => set((state) => {
+    if (state.submittedAttendanceKeys.includes(key)) return state;
+    const next = [...state.submittedAttendanceKeys, key];
+    persistSubmittedAttendanceKeys(next);
+    return { submittedAttendanceKeys: next };
+  }),
 
   // Attendance Actions
   addAttendance: (attendance) => set((state) => ({

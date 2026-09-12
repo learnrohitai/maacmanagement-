@@ -195,30 +195,22 @@ export default function BatchesPage() {
     setCreateStep(2);
   };
 
-  const handleAddStudentsToBatch = () => {
+  // FINAL action: create the batch. Adds any selected students first, then closes the wizard.
+  // Always enabled — a batch can be created with zero students and enrolled later.
+  const handleFinishCreateBatch = () => {
     if (!newlyCreatedBatch) return;
-    setStudentFilterFaculty('all');
-    setStudentFilterSchedule('all');
-    setStudentFilterBatchProgress('all');
-    const allStudents = users.filter(u => u.role === 'student');
-    const filtered = searchStudentTerm
-      ? allStudents.filter(s =>
-          s.name.toLowerCase().includes(searchStudentTerm.toLowerCase()) ||
-          (s.studentId && s.studentId.toLowerCase().includes(searchStudentTerm.toLowerCase())) ||
-          (s.course && s.course.toLowerCase().includes(searchStudentTerm.toLowerCase()))
-        )
-      : allStudents;
     const alreadyEnrolled = new Set(newlyCreatedBatch.studentIds);
     const toAdd = Array.from(selectedStudents).filter(id => !alreadyEnrolled.has(id));
-    const updatedStudentIds = [...newlyCreatedBatch.studentIds, ...toAdd];
-    updateBatch(newlyCreatedBatch.id, {
-      studentIds: updatedStudentIds,
-      enrolledStudents: updatedStudentIds.length
-    });
-    setCreateStep(1);
-    setSelectedStudents(new Set());
-    setSearchStudentTerm('');
-    setNewlyCreatedBatch(null);
+    if (toAdd.length > 0) {
+      const updatedStudentIds = [...newlyCreatedBatch.studentIds, ...toAdd];
+      updateBatch(newlyCreatedBatch.id, {
+        studentIds: updatedStudentIds,
+        enrolledStudents: updatedStudentIds.length
+      });
+    }
+    // Batch is already persisted to MongoDB (addBatch in Step 1 / updateBatch above)
+    setIsModalOpen(false);
+    resetForm();
   };
 
   const toggleSelectStudent = (studentId: string) => {
@@ -1302,21 +1294,27 @@ export default function BatchesPage() {
               );
             })()}
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+            <p className="text-[11px] text-gray-400 text-center">
+              The batch is saved to the database even with no students — you can enroll students later from its batch card.
+            </p>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-gray-100">
               <Button
-                variant="outline"
+                variant="ghost"
                 onClick={handleCancelCreate}
+                className="text-xs text-red-600 hover:bg-red-50 font-semibold"
               >
-                Back to Step 1
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                Discard &amp; Start Over
               </Button>
               <Button
-                onClick={handleAddStudentsToBatch}
-                disabled={selectedStudents.size === 0}
-                className="bg-emerald-600 hover:bg-emerald-700"
+                onClick={handleFinishCreateBatch}
+                className="bg-emerald-600 hover:bg-emerald-700 font-bold px-6"
               >
+                <CheckCircle2 className="w-4 h-4 mr-2" />
                 {selectedStudents.size > 0
-                  ? `Add ${selectedStudents.size} Student(s) to Batch`
-                  : 'Select Students First'}
+                  ? `Create Batch with ${selectedStudents.size} Student(s)`
+                  : 'Create Batch Now'}
               </Button>
             </div>
           </div>
