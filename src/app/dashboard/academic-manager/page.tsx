@@ -64,6 +64,8 @@ export default function AcademicManagerDashboard() {
   const [trackerCourse, setTrackerCourse] = useState<string>(COURSE_DATABASE[0]?.name || '');
   const [trackerStudentSearch, setTrackerStudentSearch] = useState('');
   const [trackerStudent, setTrackerStudent] = useState<UserType | null>(null);
+  // Software-wise analysis drilldown inside the Course-wise tracker
+  const [analysisSoftwareId, setAnalysisSoftwareId] = useState<string | null>(null);
 
   const teachers = users.filter(u => u.role === 'teacher');
   const allStudents = storeStudents.length > 0 ? storeStudents : users.filter(u => u.role === 'student');
@@ -189,6 +191,41 @@ export default function AcademicManagerDashboard() {
       );
     });
   }, [trackerCourseReports, trackerStudentSearch]);
+
+  // ===== Software-wise analysis (Course tracker drilldown) =====
+  const analysisSoftware = useMemo(
+    () => trackerCoursePipeline.find(p => p.software.id === analysisSoftwareId)?.software,
+    [trackerCoursePipeline, analysisSoftwareId]
+  );
+
+  // Which courses require this software?
+  const analysisRequiredByCourses = useMemo(() => {
+    if (!analysisSoftware) return [];
+    return COURSE_DATABASE.filter(c =>
+      c.softwares.some(s => findSoftwareDetails(s)?.id === analysisSoftware.id)
+    );
+  }, [analysisSoftware]);
+
+  // Batches currently teaching this software
+  const analysisBatches = useMemo(() => {
+    if (!analysisSoftware) return [];
+    return batches.filter(b => findSoftwareDetails(b.course)?.id === analysisSoftware.id);
+  }, [batches, analysisSoftware]);
+
+  // Per-student progress for this software within the selected course
+  const analysisStudentStats = useMemo(() => {
+    if (!analysisSoftware) return [];
+    return Array.from(trackerCourseReports.values()).map(({ student, report }) => {
+      const stat = report.softwares.find(s => s.softwareId === analysisSoftware.id);
+      return {
+        student,
+        attended: stat?.attendedSessions ?? 0,
+        remaining: stat?.remainingSessions ?? analysisSoftware.totalSessions,
+        completion: stat?.completionRate ?? 0,
+        status: stat?.status ?? ('pending' as const),
+      };
+    });
+  }, [trackerCourseReports, analysisSoftware]);
 
   // ===== Batch-wise (software) tracker computations =====
   // Every batch teaches ONE software; this tracker drills into that software's sessions.
@@ -484,7 +521,10 @@ export default function AcademicManagerDashboard() {
             <div className="flex flex-col sm:flex-row gap-2">
               <select
                 value={trackerCourse}
-                onChange={(e) => setTrackerCourse(e.target.value)}
+                onChange={(e) => {
+                  setTrackerCourse(e.target.value);
+                  setAnalysisSoftwareId(null);
+                }}
                 className="px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer"
               >
                 {COURSE_DATABASE.map((c) => (
@@ -505,34 +545,205 @@ export default function AcademicManagerDashboard() {
               </div>
             </div>
 
-            {/* Software pipeline summary for the selected course */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
-          {trackerCoursePipeline.map(({ software, avgCompletion, studentsStarted, totalStudents }) => (
-            <div key={software.id} className="p-3 rounded-xl border border-gray-200 bg-white space-y-2">
-              <div className="flex items-start justify-between gap-1">
-                <p className="text-xs font-bold text-gray-900 leading-tight">{software.name}</p>
-                <span className="text-[10px] font-bold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded shrink-0">
-                  {software.totalSessions}S
-                </span>
+            {/* Software pipeline summary for the selected course — click a software for analysis */}
+        <div>
+          <p className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">
+            Required Softwares for {trackerCourse} — click any software for analysis
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+            {trackerCoursePipeline.map(({ software, avgCompletion, studentsStarted, totalStudents }, idx) => (
+              <button
+                key={software.id}
+                type="button"
+                onClick={() => setAnalysisSoftwareId(analysisSoftwareId === software.id ? null : software.id)}
+                className={`p-3 rounded-xl border text-left space-y-2 transition-all cursor-pointer ${
+                  analysisSoftwareId === software.id
+                    ? 'border-purple-500 bg-purple-50/70 ring-2 ring-purple-400/40 shadow-md'
+                    : 'border-gray-200 bg-white hover:border-purple-300 hover:shadow-sm'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-1">
+                  <p className="text-xs font-bold text-gray-900 leading-tight">
+                    <span className="text-[10px] font-mono text-purple-500 mr-1">{idx + 1}.</span>
+                    {software.name}
+                  </p>
+                  <span className="text-[10px] font-bold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded shrink-0">
+                    {software.totalSessions}S
+                  </span>
+                </div>
+                <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${avgCompletion >= 100 ? 'bg-emerald-500' : avgCompletion > 0 ? 'bg-amber-500' : 'bg-gray-300'}`}
+                    style={{ width: `${avgCompletion}%` }}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-[10px] text-gray-500">
+                  <span>{avgCompletion}% avg</span>
+                  <span>{studentsStarted}/{totalStudents} started</span>
+                </div>
+              </button>
+            ))}
+            {trackerCoursePipeline.length === 0 && (
+              <div className="col-span-full p-4 text-center text-xs text-gray-500">
+                Select a course to view its software pipeline.
               </div>
-              <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${avgCompletion >= 100 ? 'bg-emerald-500' : avgCompletion > 0 ? 'bg-amber-500' : 'bg-gray-300'}`}
-                  style={{ width: `${avgCompletion}%` }}
-                />
-              </div>
-              <div className="flex items-center justify-between text-[10px] text-gray-500">
-                <span>{avgCompletion}% avg</span>
-                <span>{studentsStarted}/{totalStudents} started</span>
-              </div>
-            </div>
-          ))}
-          {trackerCoursePipeline.length === 0 && (
-            <div className="col-span-full p-4 text-center text-xs text-gray-500">
-              Select a course to view its software pipeline.
-            </div>
-          )}
+            )}
+          </div>
         </div>
+
+        {/* ===== Software-wise Analysis Drilldown ===== */}
+        {analysisSoftware && (
+          <div className="mb-6 p-4 rounded-2xl border-2 border-purple-300 bg-gradient-to-br from-purple-50/80 to-indigo-50/60 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600">
+                  Software-wise Analysis — Module {trackerCoursePipeline.findIndex(p => p.software.id === analysisSoftware.id) + 1} in {trackerCourse}
+                </p>
+                <h4 className="text-lg font-extrabold text-gray-900">{analysisSoftware.name}</h4>
+                <p className="text-xs text-gray-600 max-w-xl">{analysisSoftware.description}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAnalysisSoftwareId(null)}
+                className="self-start text-xs font-bold text-gray-500 hover:text-gray-800 bg-white border border-gray-200 px-3 py-1.5 rounded-lg cursor-pointer"
+              >
+                ✕ Close Analysis
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="p-3 bg-white rounded-xl border border-gray-200">
+                <p className="text-[10px] text-gray-500 font-semibold uppercase">Total Sessions</p>
+                <p className="text-xl font-extrabold text-purple-700">{analysisSoftware.totalSessions}</p>
+              </div>
+              <div className="p-3 bg-white rounded-xl border border-gray-200">
+                <p className="text-[10px] text-gray-500 font-semibold uppercase">Required By Courses</p>
+                <p className="text-xl font-extrabold text-cyan-700">{analysisRequiredByCourses.length}</p>
+              </div>
+              <div className="p-3 bg-white rounded-xl border border-gray-200">
+                <p className="text-[10px] text-gray-500 font-semibold uppercase">Batches Teaching It</p>
+                <p className="text-xl font-extrabold text-orange-600">{analysisBatches.length}</p>
+              </div>
+              <div className="p-3 bg-white rounded-xl border border-gray-200">
+                <p className="text-[10px] text-gray-500 font-semibold uppercase">Avg Completion ({trackerCourse})</p>
+                <p className="text-xl font-extrabold text-emerald-700">
+                  {trackerCoursePipeline.find(p => p.software.id === analysisSoftware.id)?.avgCompletion ?? 0}%
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Which courses need this software */}
+              <div className="p-3.5 bg-white rounded-xl border border-gray-200">
+                <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">
+                  Courses that require {analysisSoftware.name}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {analysisRequiredByCourses.map(c => (
+                    <span
+                      key={c.id}
+                      className={`text-[10px] font-bold px-2 py-1 rounded-lg border ${
+                        c.name === trackerCourse
+                          ? 'bg-purple-100 text-purple-800 border-purple-300'
+                          : 'bg-gray-50 text-gray-600 border-gray-200'
+                      }`}
+                    >
+                      {c.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Batches teaching this software */}
+              <div className="p-3.5 bg-white rounded-xl border border-gray-200">
+                <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">
+                  Batches teaching this software
+                </p>
+                {analysisBatches.length === 0 ? (
+                  <p className="text-xs text-gray-400">No batches created for this software yet.</p>
+                ) : (
+                  <div className="space-y-1.5 max-h-32 overflow-y-auto pr-1">
+                    {analysisBatches.map(b => (
+                      <div key={b.id} className="flex items-center justify-between text-xs bg-gray-50 rounded-lg px-2.5 py-1.5">
+                        <span className="font-semibold text-gray-800 truncate">{b.batchIdCode || b.name} — {b.name}</span>
+                        <span className="text-gray-500 shrink-0 ml-2">{b.enrolledStudents} students • {b.teacherName}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Per-student progress for this software */}
+            <div className="p-3.5 bg-white rounded-xl border border-gray-200">
+              <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-2">
+                Student-wise progress — {analysisSoftware.name} ({trackerCourse})
+              </p>
+              {analysisStudentStats.length === 0 ? (
+                <p className="text-xs text-gray-400">No students enrolled in {trackerCourse} yet.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="bg-gray-50 text-gray-500 text-[10px] uppercase border-b border-gray-100">
+                      <tr>
+                        <th className="py-2 px-3">Student</th>
+                        <th className="py-2 px-3">Attended</th>
+                        <th className="py-2 px-3">Remaining</th>
+                        <th className="py-2 px-3">Completion</th>
+                        <th className="py-2 px-3">Status</th>
+                        <th className="py-2 px-3 text-right">Sessions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {analysisStudentStats.map(({ student, attended, remaining, completion, status }) => (
+                        <tr key={student.id} className="hover:bg-gray-50/60">
+                          <td className="py-2 px-3">
+                            <div className="text-xs font-medium text-gray-900">{student.name}</div>
+                            <div className="text-[10px] font-mono text-emerald-700">{student.studentId || 'MAAC-STU'}</div>
+                          </td>
+                          <td className="py-2 px-3 text-xs font-bold text-emerald-700">{attended}/{analysisSoftware.totalSessions}</td>
+                          <td className="py-2 px-3 text-xs font-bold text-orange-600">{remaining}</td>
+                          <td className="py-2 px-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-16 bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full ${completion >= 100 ? 'bg-emerald-500' : completion > 0 ? 'bg-amber-500' : 'bg-gray-300'}`}
+                                  style={{ width: `${completion}%` }}
+                                />
+                              </div>
+                              <span className="text-xs font-bold text-gray-700">{completion}%</span>
+                            </div>
+                          </td>
+                          <td className="py-2 px-3">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                              status === 'completed'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                : status === 'in-progress'
+                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                  : 'bg-gray-50 text-gray-500 border-gray-200'
+                            }`}>
+                              {status === 'completed' ? 'Completed' : status === 'in-progress' ? 'In Progress' : 'Pending'}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3 text-right">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setTrackerStudent(student)}
+                              className="text-xs px-2.5 py-1 text-purple-700 border-purple-200 hover:bg-purple-50 font-semibold"
+                            >
+                              Sessions
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
             {/* Student progress matrix for the selected course */}
             <div>
