@@ -1,13 +1,21 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import { useAttendanceSync } from '@/lib/useAttendanceSync';
+import {
+  findSoftwareDetails,
+  getSoftwareSessionBreakdown,
+  getSoftwareTotalSessions,
+  SOFTWARE_DATABASE,
+  SoftwareSession
+} from '@/lib/softwareData';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input, { Select } from '@/components/ui/Input';
+import Modal from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Table';
 import { CloudUpload, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import {
@@ -18,10 +26,15 @@ import {
   Download,
   Users,
   BookOpen,
-  MapPin
+  MapPin,
+  ListOrdered,
+  Layers,
+  ChevronRight,
+  Info,
+  Sparkles
 } from 'lucide-react';
 
-export default function AttendancePage() {
+function AttendanceContent() {
   const { currentUser, attendance, batches, users, addAttendance, updateAttendance } = useStore();
   const searchParams = useSearchParams();
   const preselectedBatchId = searchParams.get('batch') || '';
@@ -32,6 +45,7 @@ export default function AttendancePage() {
   const [studentTopics, setStudentTopics] = useState<Record<string, string>>({});
   const [studentAssignments, setStudentAssignments] = useState<Record<string, boolean>>({});
   const [studentGrades, setStudentGrades] = useState<Record<string, string>>({});
+  const [isSyllabusModalOpen, setIsSyllabusModalOpen] = useState(false);
 
   const students = users.filter(u => u.role === 'student');
 
@@ -51,6 +65,50 @@ export default function AttendancePage() {
 
   const activeBatchId = selectedBatch || (myBatches.length > 0 ? myBatches[0].id : '');
   const activeBatch = myBatches.find(b => b.id === activeBatchId);
+
+  // Load software details and exact session breakdown for this active batch
+  const activeSoftware = useMemo(() => {
+    if (!activeBatch) return undefined;
+    return findSoftwareDetails(activeBatch.course);
+  }, [activeBatch]);
+
+  const softwareSessions = useMemo(() => {
+    if (!activeBatch) return [];
+    return getSoftwareSessionBreakdown(activeBatch.course);
+  }, [activeBatch]);
+
+  // Track covered sessions for this batch in attendance history
+  const batchAttendanceHistory = useMemo(() => {
+    if (!activeBatch) return [];
+    return attendance.filter(a => a.batchId === activeBatch.id);
+  }, [attendance, activeBatch]);
+
+  const coveredSessionNumbers = useMemo(() => {
+    const set = new Set<number>();
+    batchAttendanceHistory.forEach(a => {
+      if (a.topic) {
+        const match = a.topic.match(/Session\s+(\d+)/i);
+        if (match) set.add(parseInt(match[1]));
+      }
+    });
+    return set;
+  }, [batchAttendanceHistory]);
+
+  // Auto-select default / next pending session topic when activeBatch changes
+  useEffect(() => {
+    if (softwareSessions.length > 0) {
+      // Find first session not yet completed, or default to Session 1
+      const nextPending = softwareSessions.find(s => !coveredSessionNumbers.has(s.sessionNumber)) || softwareSessions[0];
+      const initialTopic = `Session ${nextPending.sessionNumber}: ${nextPending.title}`;
+      setSelectedTopic(initialTopic);
+    }
+  }, [activeBatchId, softwareSessions]);
+
+  // Strictly bind topicOptions to the software's session breakdown
+  const topicOptions = useMemo(() => {
+    if (softwareSessions.length === 0) return [];
+    return softwareSessions.map(s => `Session ${s.sessionNumber}: ${s.title}`);
+  }, [softwareSessions]);
 
   // Get students enrolled in the selected batch
   const batchStudents = useMemo(() => {
@@ -104,12 +162,23 @@ export default function AttendancePage() {
   ) => {
     if (!activeBatch) return;
 
+    const topicToSave = topic || selectedTopic || (softwareSessions[0] ? `Session ${softwareSessions[0].sessionNumber}: ${softwareSessions[0].title}` : '');
+    const sessionNumMatch = topicToSave.match(/Session\s+(\d+)/i);
+    const sessionNumber = sessionNumMatch ? parseInt(sessionNumMatch[1]) : undefined;
+
     const existingRecord = attendance.find(
       a => a.studentId === studentId && a.batchId === activeBatch.id && a.date === selectedDate
     );
 
     if (existingRecord) {
-      updateAttendance(existingRecord.id, { status, topic, assignmentSubmitted, grade });
+      updateAttendance(existingRecord.id, {
+        status,
+        topic: topicToSave,
+        sessionNumber,
+        softwareName: activeBatch.course,
+        assignmentSubmitted,
+        grade
+      });
     } else {
       addAttendance({
         id: Date.now().toString() + studentId,
@@ -119,13 +188,22 @@ export default function AttendancePage() {
         batchName: activeBatch.name,
         date: selectedDate,
         status,
-        topic: topic || '',
+        topic: topicToSave,
+        sessionNumber,
+        softwareName: activeBatch.course,
         assignmentSubmitted: assignmentSubmitted || false,
         grade: grade || '',
         markedBy: currentUser?.id || '',
         markedAt: new Date().toISOString()
       });
     }
+  };
+
+  const handleSelectSessionTopic = (topic: string) => {
+    setSelectedTopic(topic);
+    const updatedTopics: Record<string, string> = {};
+    batchStudents.forEach(s => { updatedTopics[s.id] = topic; });
+    setStudentTopics(prev => ({ ...prev, ...updatedTopics }));
   };
 
   const markAllPresent = () => {
@@ -187,25 +265,6 @@ export default function AttendancePage() {
       setSubmitError('Could not reach the database. Your marks are kept locally — try again.');
     }
   };
-
-  // Available topics for the dropdown
-  const topicOptions = [
-    'Maya Interface Basics',
-    'Viewport Navigation',
-    'Polygon Modeling Fundamentals',
-    'Character Rigging Intro',
-    'Nuke Compositing Basics',
-    'Houdini FX Fundamentals',
-    'After Effects Motion Graphics',
-    'Figma Design Principles',
-    '3D Texturing & Shading',
-    'Animation Walk Cycle',
-    'Lighting & Rendering',
-    'Roto & Paint Techniques',
-    'Color Correction Basics',
-    'Short Film Production',
-    'Showreel Review Session'
-  ];
 
   const getButtonStyle = (buttonType: string, currentStatus: string | null) => {
     const isActive = currentStatus === buttonType;
@@ -320,38 +379,111 @@ export default function AttendancePage() {
       {/* Batch Selected - Show Attendance */}
       {activeBatch && (
         <>
-          {/* Batch Info Bar */}
-          <Card className="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white">
-                  <BookOpen className="w-5 h-5" />
+          {/* Batch Info Bar & Software Syllabus Overview */}
+          <Card className="p-5 bg-gradient-to-r from-purple-50 via-indigo-50 to-cyan-50 border-purple-200 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-purple-200">
+                  <BookOpen className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900">{activeBatch.name}</h3>
-                  <p className="text-sm text-gray-500">{activeBatch.course} • {activeBatch.teacherName}</p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-gray-900 text-lg">{activeBatch.name}</h3>
+                    <Badge variant="purple">{activeBatch.course}</Badge>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-0.5">
+                    Faculty: <span className="font-semibold text-gray-800">{activeBatch.teacherName}</span> • Total Curriculum: <span className="font-bold text-purple-700">{activeSoftware ? `${activeSoftware.totalSessions} Sessions` : `${softwareSessions.length} Sessions`}</span>
+                  </p>
                 </div>
               </div>
-              <div className="flex items-center gap-4 text-sm">
-                <span className="flex items-center gap-1.5 text-gray-600">
-                  <Calendar className="w-4 h-4 text-purple-500" />
-                  {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-                </span>
-                <span className="flex items-center gap-1.5 text-gray-600">
-                  <Users className="w-4 h-4 text-cyan-500" />
-                  {batchStudents.length} Students
-                </span>
-                <span className="flex items-center gap-1.5 text-gray-600">
-                  <MapPin className="w-4 h-4 text-emerald-500" />
-                  {activeBatch.room}
-                </span>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsSyllabusModalOpen(true)}
+                  className="bg-white border-purple-200 text-purple-700 hover:bg-purple-50 shadow-sm"
+                >
+                  <ListOrdered className="w-4 h-4 mr-1.5 text-purple-600" />
+                  View Full Syllabus ({softwareSessions.length} Sessions)
+                </Button>
+                <div className="flex items-center gap-3 text-xs bg-white/80 backdrop-blur-sm px-3.5 py-2 rounded-xl border border-purple-100">
+                  <span className="flex items-center gap-1 text-gray-600">
+                    <Calendar className="w-3.5 h-3.5 text-purple-500" />
+                    {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  </span>
+                  <span className="flex items-center gap-1 text-gray-600">
+                    <Users className="w-3.5 h-3.5 text-cyan-500" />
+                    {batchStudents.length} Enrolled
+                  </span>
+                  <span className="flex items-center gap-1 text-gray-600">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-500" />
+                    {activeBatch.room}
+                  </span>
+                </div>
               </div>
             </div>
+
+            {/* Session Breakdown Stepper / Quick Selection */}
+            {softwareSessions.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-purple-100/80">
+                <div className="flex items-center justify-between gap-2 mb-2.5">
+                  <div className="flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-purple-600" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-gray-700">
+                      {activeBatch.course} Session Breakdown (Click session to mark):
+                    </span>
+                  </div>
+                  <span className="text-xs text-purple-700 font-semibold bg-purple-100/70 px-2.5 py-0.5 rounded-full">
+                    {coveredSessionNumbers.size} of {softwareSessions.length} Sessions Covered ({Math.round((coveredSessionNumbers.size / softwareSessions.length) * 100)}%)
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-purple-200">
+                  {softwareSessions.map((session) => {
+                    const sessionTopicStr = `Session ${session.sessionNumber}: ${session.title}`;
+                    const isSelected = selectedTopic === sessionTopicStr;
+                    const isCovered = coveredSessionNumbers.has(session.sessionNumber);
+
+                    return (
+                      <button
+                        key={session.sessionNumber}
+                        type="button"
+                        onClick={() => handleSelectSessionTopic(sessionTopicStr)}
+                        className={`group shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all duration-200 border ${
+                          isSelected
+                            ? 'bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-200 ring-2 ring-purple-400/40'
+                            : isCovered
+                            ? 'bg-emerald-50/80 text-emerald-800 border-emerald-200 hover:border-emerald-300 hover:bg-emerald-100/70'
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300 hover:bg-purple-50/50'
+                        }`}
+                        title={`${session.title} ${session.description ? `\n\n${session.description}` : ''}`}
+                      >
+                        <span
+                          className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold ${
+                            isSelected
+                              ? 'bg-white text-purple-700'
+                              : isCovered
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-gray-100 text-gray-600 group-hover:bg-purple-100 group-hover:text-purple-700'
+                          }`}
+                        >
+                          {isCovered && !isSelected ? '✓' : session.sessionNumber}
+                        </span>
+                        <span className="max-w-[150px] truncate text-left">
+                          {session.title}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </Card>
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {            [
+            {[
               { label: 'Total', value: todayStats.total, color: 'bg-gray-500', icon: <Users className="w-5 h-5" /> },
               { label: 'Marked', value: todayStats.marked, color: 'bg-purple-500', icon: <Calendar className="w-5 h-5" /> },
               { label: 'Present', value: todayStats.present, color: 'bg-emerald-500', icon: <CheckCircle className="w-5 h-5" /> },
@@ -450,9 +582,14 @@ export default function AttendancePage() {
           {/* Student Attendance Table */}
           <Card className="p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">
-                Students in {activeBatch.name}
-              </h3>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Students in {activeBatch.name}
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  Marking session: <strong className="text-purple-700">{selectedTopic || 'None Selected'}</strong>
+                </p>
+              </div>
               <Badge variant="info">{batchStudents.length} students</Badge>
             </div>
 
@@ -466,7 +603,7 @@ export default function AttendancePage() {
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Email</th>
                     {currentUser?.role === 'teacher' && (
                       <>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Topic Covered</th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Software Session Topic</th>
                         <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase">Assignment</th>
                         <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase">Grade</th>
                         <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase">Mark Attendance</th>
@@ -512,9 +649,36 @@ export default function AttendancePage() {
                         {currentUser?.role === 'teacher' && (
                           <>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <span className="text-xs font-medium text-gray-800 bg-purple-50 px-2.5 py-1 rounded-lg">
-                                {studentTopics[student.id] || attendanceRecord?.topic || selectedTopic || '—'}
-                              </span>
+                              {topicOptions.length > 0 ? (
+                                <select
+                                  value={studentTopics[student.id] || attendanceRecord?.topic || selectedTopic || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setStudentTopics(prev => ({ ...prev, [student.id]: val }));
+                                    if (status) {
+                                      handleMarkAttendance(
+                                        student.id,
+                                        student.name,
+                                        status,
+                                        val,
+                                        studentAssignments[student.id] ?? attendanceRecord?.assignmentSubmitted,
+                                        studentGrades[student.id] || attendanceRecord?.grade
+                                      );
+                                    }
+                                  }}
+                                  className="max-w-[220px] truncate px-2.5 py-1.5 text-xs font-medium rounded-lg border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                >
+                                  {topicOptions.map((top) => (
+                                    <option key={top} value={top}>
+                                      {top}
+                                    </option>
+                                  ))}
+                                </select>
+                              ) : (
+                                <span className="text-xs font-medium text-gray-800 bg-purple-50 px-2.5 py-1 rounded-lg">
+                                  {studentTopics[student.id] || attendanceRecord?.topic || selectedTopic || '—'}
+                                </span>
+                              )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-center">
                               <button
@@ -522,7 +686,14 @@ export default function AttendancePage() {
                                   const newVal = !(studentAssignments[student.id] ?? attendanceRecord?.assignmentSubmitted ?? false);
                                   setStudentAssignments(prev => ({ ...prev, [student.id]: newVal }));
                                   if (status) {
-                                    handleMarkAttendance(student.id, student.name, status, studentTopics[student.id] || attendanceRecord?.topic, newVal, studentGrades[student.id] || attendanceRecord?.grade);
+                                    handleMarkAttendance(
+                                      student.id,
+                                      student.name,
+                                      status,
+                                      studentTopics[student.id] || attendanceRecord?.topic,
+                                      newVal,
+                                      studentGrades[student.id] || attendanceRecord?.grade
+                                    );
                                   }
                                 }}
                                 className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 border-2 ${
@@ -542,7 +713,14 @@ export default function AttendancePage() {
                                   const val = e.target.value;
                                   setStudentGrades(prev => ({ ...prev, [student.id]: val }));
                                   if (status) {
-                                    handleMarkAttendance(student.id, student.name, status, studentTopics[student.id] || attendanceRecord?.topic, studentAssignments[student.id] ?? attendanceRecord?.assignmentSubmitted, val);
+                                    handleMarkAttendance(
+                                      student.id,
+                                      student.name,
+                                      status,
+                                      studentTopics[student.id] || attendanceRecord?.topic,
+                                      studentAssignments[student.id] ?? attendanceRecord?.assignmentSubmitted,
+                                      val
+                                    );
                                   }
                                 }}
                                 className="px-2 py-1.5 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white font-semibold text-center"
@@ -563,7 +741,14 @@ export default function AttendancePage() {
                                 {(['present', 'absent', 'late'] as const).map(s => (
                                   <button
                                     key={s}
-                                    onClick={() => handleMarkAttendance(student.id, student.name, s, studentTopics[student.id] || attendanceRecord?.topic, studentAssignments[student.id] ?? attendanceRecord?.assignmentSubmitted, studentGrades[student.id] || attendanceRecord?.grade)}
+                                    onClick={() => handleMarkAttendance(
+                                      student.id,
+                                      student.name,
+                                      s,
+                                      studentTopics[student.id] || attendanceRecord?.topic,
+                                      studentAssignments[student.id] ?? attendanceRecord?.assignmentSubmitted,
+                                      studentGrades[student.id] || attendanceRecord?.grade
+                                    )}
                                     className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200 ${getButtonStyle(s, status)} hover:scale-110 border-2 ${status === s ? 'border-transparent' : 'border-transparent'}`}
                                     title={s.charAt(0).toUpperCase() + s.slice(1)}
                                   >
@@ -585,6 +770,107 @@ export default function AttendancePage() {
           </Card>
         </>
       )}
+
+      {/* Syllabus & Session Breakdown Modal */}
+      {activeBatch && (
+        <Modal
+          isOpen={isSyllabusModalOpen}
+          onClose={() => setIsSyllabusModalOpen(false)}
+          title={`${activeBatch.course} — Complete Session Breakdown`}
+          size="lg"
+        >
+          <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+            <div className="p-3.5 bg-purple-50 rounded-xl border border-purple-200 flex items-center justify-between">
+              <div>
+                <h4 className="font-bold text-gray-900">{activeBatch.course} Syllabus</h4>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  Total Sessions: <strong>{softwareSessions.length}</strong> • Covered in this Batch: <strong>{coveredSessionNumbers.size}</strong>
+                </p>
+              </div>
+              <Badge variant="purple">{activeBatch.name}</Badge>
+            </div>
+
+            <div className="space-y-2.5">
+              {softwareSessions.map((session) => {
+                const isCovered = coveredSessionNumbers.has(session.sessionNumber);
+                const isCurrentlySelected = selectedTopic === `Session ${session.sessionNumber}: ${session.title}`;
+
+                return (
+                  <div
+                    key={session.sessionNumber}
+                    className={`p-3.5 rounded-xl border transition-all ${
+                      isCurrentlySelected
+                        ? 'border-purple-500 bg-purple-50/70 ring-1 ring-purple-500'
+                        : isCovered
+                        ? 'border-emerald-200 bg-emerald-50/30'
+                        : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <span
+                          className={`w-7 h-7 rounded-lg shrink-0 flex items-center justify-center text-xs font-bold ${
+                            isCurrentlySelected
+                              ? 'bg-purple-600 text-white'
+                              : isCovered
+                              ? 'bg-emerald-600 text-white'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          {isCovered ? '✓' : session.sessionNumber}
+                        </span>
+                        <div>
+                          <h5 className="font-bold text-gray-900 text-sm">
+                            Session {session.sessionNumber}: {session.title}
+                          </h5>
+                          {session.description && (
+                            <p className="text-xs text-gray-600 mt-1 whitespace-pre-line leading-relaxed">
+                              {session.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="shrink-0 flex items-center gap-2">
+                        {isCovered && (
+                          <Badge variant="success">Completed</Badge>
+                        )}
+                        <Button
+                          size="sm"
+                          variant={isCurrentlySelected ? 'primary' : 'outline'}
+                          onClick={() => {
+                            handleSelectSessionTopic(`Session ${session.sessionNumber}: ${session.title}`);
+                            setIsSyllabusModalOpen(false);
+                          }}
+                        >
+                          {isCurrentlySelected ? 'Selected' : 'Select Session'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
+  );
+}
+
+export default function AttendancePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex items-center gap-3 text-purple-600 font-medium">
+            <Loader2 className="w-6 h-6 animate-spin" />
+            Loading Attendance & Software Syllabus...
+          </div>
+        </div>
+      }
+    >
+      <AttendanceContent />
+    </Suspense>
   );
 }

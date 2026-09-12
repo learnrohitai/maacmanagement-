@@ -1,4 +1,5 @@
 import { User, Batch, Attendance, LessonPlan, StudentProgress, FeeRecord, DashboardStats, InquiryLead } from '@/types';
+import { getSoftwareList } from '@/lib/softwareData';
 
 export const mockUsers: User[] = [
   {
@@ -275,7 +276,9 @@ export const mockBatches: Batch[] = [
     id: '1',
     batchIdCode: 'MAAC-ANI-01',
     name: 'Animation Premium',
-    course: 'Animation',
+    course: 'Maya - 3D Modeling',
+    software: 'Maya - 3D Modeling',
+    totalSessions: 12,
     teacherId: '2',
     teacherName: 'Rahul Sharma',
     startTime: '09:00',
@@ -288,15 +291,17 @@ export const mockBatches: Batch[] = [
     endDate: '2026-09-30',
     status: 'active',
     room: 'Lab 1 - Maya Studio',
-    classesCompleted: 36,
-    classesRemaining: 24,
+    classesCompleted: 8,
+    classesRemaining: 4,
     isPracticeDoubtClass: false
   },
   {
     id: '2',
     batchIdCode: 'MAAC-VFX-02',
     name: 'VFX Professional',
-    course: 'VFX',
+    course: 'Nuke',
+    software: 'Nuke',
+    totalSessions: 16,
     teacherId: '3',
     teacherName: 'Priya Patel',
     startTime: '14:00',
@@ -309,15 +314,17 @@ export const mockBatches: Batch[] = [
     endDate: '2026-10-31',
     status: 'active',
     room: 'Lab 2 - Nuke Suite',
-    classesCompleted: 42,
-    classesRemaining: 18,
+    classesCompleted: 10,
+    classesRemaining: 6,
     isPracticeDoubtClass: false
   },
   {
     id: '3',
     batchIdCode: 'MAAC-GD-03',
     name: 'Graphic Design Masterclass',
-    course: 'Graphic Design',
+    course: 'Photoshop - PS',
+    software: 'Photoshop - PS',
+    totalSessions: 16,
     teacherId: '2',
     teacherName: 'Rahul Sharma',
     startTime: '10:00',
@@ -330,15 +337,17 @@ export const mockBatches: Batch[] = [
     endDate: '2026-08-31',
     status: 'active',
     room: 'Lab 3 - Design Bay',
-    classesCompleted: 28,
-    classesRemaining: 8,
+    classesCompleted: 12,
+    classesRemaining: 4,
     isPracticeDoubtClass: false
   },
   {
     id: '4',
     batchIdCode: 'MAAC-MG-04',
     name: 'Motion Graphics & C4D',
-    course: 'Motion Graphics',
+    course: 'After Effects - AFX',
+    software: 'After Effects - AFX',
+    totalSessions: 14,
     teacherId: '3',
     teacherName: 'Priya Patel',
     startTime: '16:00',
@@ -352,14 +361,16 @@ export const mockBatches: Batch[] = [
     status: 'upcoming',
     room: 'Lab 4 - After Effects Hub',
     classesCompleted: 0,
-    classesRemaining: 32,
+    classesRemaining: 14,
     isPracticeDoubtClass: false
   },
   {
     id: '5',
     batchIdCode: 'MAAC-PRACTICE-01',
     name: '3D Maya Practice & Doubt Session',
-    course: 'Animation',
+    course: 'Maya - 3D Modeling',
+    software: 'Maya - 3D Modeling',
+    totalSessions: 12,
     teacherId: '2',
     teacherName: 'Rahul Sharma',
     startTime: '12:30',
@@ -372,8 +383,8 @@ export const mockBatches: Batch[] = [
     endDate: '2026-10-31',
     status: 'active',
     room: 'Lab 1 - Maya Studio',
-    classesCompleted: 16,
-    classesRemaining: 16,
+    classesCompleted: 6,
+    classesRemaining: 6,
     isPracticeDoubtClass: true
   }
 ];
@@ -1032,14 +1043,8 @@ export const mockDashboardStats: DashboardStats = {
   newAdmissions: 24
 };
 
-export const courseOptions = [
-  'Animation',
-  'VFX',
-  'Graphic Design',
-  'Motion Graphics',
-  'Game Design',
-  'Last Batch'
-];
+export const softwareOptions = getSoftwareList();
+export const courseOptions = getSoftwareList();
 
 export const timeSlots = [
   '09:00-12:00',

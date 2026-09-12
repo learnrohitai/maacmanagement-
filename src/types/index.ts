@@ -95,7 +95,10 @@ export interface Batch {
   id: string;
   batchIdCode?: string;
   name: string;
-  course: string;
+  course: string; // Software or Course name
+  software?: string; // Explicit software identifier
+  totalSessions?: number;
+  currentSessionIndex?: number;
   teacherId: string;
   teacherName: string;
   startTime: string;
@@ -122,6 +125,8 @@ export interface Attendance {
   date: string;
   status: 'present' | 'absent' | 'late';
   topic?: string;
+  sessionNumber?: number;
+  softwareName?: string;
   assignmentSubmitted?: boolean;
   grade?: string;
   markedBy: string;

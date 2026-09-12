@@ -26,9 +26,18 @@ import {
   ArrowRight,
   CheckCircle2,
   ShieldAlert,
-  ClipboardCheck
+  ClipboardCheck,
+  Layers,
+  ListOrdered
 } from 'lucide-react';
 import { courseOptions, weekDays } from '@/lib/mockData';
+import {
+  SOFTWARE_DATABASE,
+  getSoftwareList,
+  findSoftwareDetails,
+  getSoftwareSessionBreakdown,
+  getSoftwareTotalSessions
+} from '@/lib/softwareData';
 import { Batch, User as UserType } from '@/types';
 
 // ID generators kept outside the component so render stays pure
@@ -42,9 +51,11 @@ export default function BatchesPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterSchedule, setFilterSchedule] = useState('all');
   const [filterTeacher, setFilterTeacher] = useState('all');
+  const [filterSoftware, setFilterSoftware] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [viewingBatch, setViewingBatch] = useState<Batch | null>(null);
+  const [viewingBreakdownBatch, setViewingBreakdownBatch] = useState<Batch | null>(null);
   const [createStep, setCreateStep] = useState<1 | 2>(1);
   const [newlyCreatedBatch, setNewlyCreatedBatch] = useState<Batch | null>(null);
   const [searchStudentTerm, setSearchStudentTerm] = useState('');
@@ -75,7 +86,7 @@ export default function BatchesPage() {
     endDate: '',
     room: '',
     classesCompleted: 0,
-    classesRemaining: 30,
+    classesRemaining: 16,
     isPracticeDoubtClass: false
   });
 
@@ -119,6 +130,7 @@ export default function BatchesPage() {
       batch.course.toLowerCase().includes(searchTerm.toLowerCase()) ||
       batch.teacherName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || batch.status === filterStatus;
+    const matchesSoftware = filterSoftware === 'all' || batch.course.toLowerCase() === filterSoftware.toLowerCase();
 
     // Schedule filter: MWF (Mon/Wed/Fri) or TTS (Tue/Thu/Sat)
     const batchDays = batch.days.map(d => d.toLowerCase());
@@ -132,8 +144,19 @@ export default function BatchesPage() {
     // Teacher filter
     const matchesTeacher = filterTeacher === 'all' || batch.teacherId === filterTeacher;
 
-    return matchesSearch && matchesStatus && matchesSchedule && matchesTeacher;
+    return matchesSearch && matchesStatus && matchesSoftware && matchesSchedule && matchesTeacher;
   });
+
+  const handleSoftwareSelectChange = (softwareName: string) => {
+    const sw = findSoftwareDetails(softwareName);
+    const total = sw ? sw.totalSessions : 16;
+    setFormData(prev => ({
+      ...prev,
+      course: softwareName,
+      classesRemaining: total,
+      name: prev.name ? prev.name : sw ? `${sw.name} Batch` : ''
+    }));
+  };
 
   const handleSubmitStep1 = (e: React.FormEvent) => {
     e.preventDefault();
@@ -321,7 +344,16 @@ export default function BatchesPage() {
               { value: 'upcoming', label: 'Upcoming' },
               { value: 'completed', label: 'Completed' }
             ]}
-            className="w-full md:w-44"
+            className="w-full md:w-36"
+          />
+          <Select
+            value={filterSoftware}
+            onChange={(e) => setFilterSoftware(e.target.value)}
+            options={[
+              { value: 'all', label: 'All Software' },
+              ...SOFTWARE_DATABASE.map(s => ({ value: s.name, label: s.name }))
+            ]}
+            className="w-full md:w-48"
           />
           <Select
             value={filterSchedule}
@@ -331,7 +363,7 @@ export default function BatchesPage() {
               { value: 'mwf', label: 'MWF (Mon/Wed/Fri)' },
               { value: 'tts', label: 'TTS (Tue/Thu/Sat)' }
             ]}
-            className="w-full md:w-48"
+            className="w-full md:w-44"
           />
           <Select
             value={filterTeacher}
@@ -340,7 +372,7 @@ export default function BatchesPage() {
               { value: 'all', label: 'All Teachers' },
               ...teachers.map(t => ({ value: t.id, label: t.name }))
             ]}
-            className="w-full md:w-48"
+            className="w-full md:w-44"
           />
         </div>
       </Card>
@@ -374,7 +406,19 @@ export default function BatchesPage() {
                   </div>
 
                   <h3 className="text-xl font-bold text-gray-900 mb-0.5">{batch.name}</h3>
-                  <p className="text-xs font-medium text-emerald-600 mb-3">{batch.course} • Faculty: {batch.teacherName}</p>
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200/60">
+                      Software: {batch.course}
+                    </span>
+                    <button
+                      onClick={() => setViewingBreakdownBatch(batch)}
+                      className="text-xs font-bold text-purple-600 hover:text-purple-800 flex items-center gap-1 hover:underline cursor-pointer"
+                    >
+                      <BookOpen className="w-3.5 h-3.5" />
+                      {getSoftwareTotalSessions(batch.course)} Sessions
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3">Faculty: <strong>{batch.teacherName}</strong></p>
 
                   <div className="space-y-2 mb-4 text-xs bg-gray-50/80 p-3 rounded-xl">
                     <div className="flex items-center text-gray-700">
@@ -398,12 +442,12 @@ export default function BatchesPage() {
                   {/* Class Scheduling Progress (Section 3 of handwritten note) */}
                   <div className="grid grid-cols-2 gap-2 p-2.5 bg-purple-50/60 rounded-xl text-xs mb-4">
                     <div>
-                      <p className="text-gray-500 text-[11px]">Classes Done</p>
-                      <p className="font-bold text-emerald-700">{batch.classesCompleted ?? 24} Sessions</p>
+                      <p className="text-gray-500 text-[11px]">Sessions Completed</p>
+                      <p className="font-bold text-emerald-700">{batch.classesCompleted ?? 0} / {getSoftwareTotalSessions(batch.course)}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-[11px]">Remaining</p>
-                      <p className="font-bold text-orange-600">{batch.classesRemaining ?? 16} Sessions</p>
+                      <p className="text-gray-500 text-[11px]">Sessions Left</p>
+                      <p className="font-bold text-orange-600">{batch.classesRemaining ?? getSoftwareTotalSessions(batch.course)} Sessions</p>
                     </div>
                   </div>
 
@@ -423,18 +467,29 @@ export default function BatchesPage() {
 
                 </div>
 
-                <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-                  <Button variant="ghost" size="sm" className="flex-1 text-xs" onClick={() => openEditModal(batch)}>
-                    <Edit2 className="w-3.5 h-3.5 mr-1" />
-                    Edit
+                <div className="flex flex-col gap-2 pt-3 border-t border-gray-100">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-xs text-purple-700 border-purple-200 hover:bg-purple-50 font-semibold"
+                    onClick={() => setViewingBreakdownBatch(batch)}
+                  >
+                    <BookOpen className="w-3.5 h-3.5 mr-1.5" />
+                    View Session Breakdown ({getSoftwareTotalSessions(batch.course)} Topics)
                   </Button>
-                  <Button variant="ghost" size="sm" className="flex-1 text-xs" onClick={() => setViewingBatch(batch)}>
-                    <Eye className="w-3.5 h-3.5 mr-1" />
-                    Students ({batch.enrolledStudents})
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => deleteBatch(batch.id)}>
-                    <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" className="flex-1 text-xs" onClick={() => openEditModal(batch)}>
+                      <Edit2 className="w-3.5 h-3.5 mr-1" />
+                      Edit
+                    </Button>
+                    <Button variant="ghost" size="sm" className="flex-1 text-xs" onClick={() => setViewingBatch(batch)}>
+                      <Eye className="w-3.5 h-3.5 mr-1" />
+                      Students ({batch.enrolledStudents})
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => deleteBatch(batch.id)}>
+                      <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                    </Button>
+                  </div>
                 </div>
               </Card>
             </motion.div>
@@ -699,10 +754,13 @@ export default function BatchesPage() {
               <Select
                 label="Software *"
                 value={formData.course}
-                onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                onChange={(e) => handleSoftwareSelectChange(e.target.value)}
                 options={[
-                  { value: '', label: 'Select Software' },
-                  ...courseOptions.map(c => ({ value: c, label: c }))
+                  { value: '', label: '-- Select Software --' },
+                  ...SOFTWARE_DATABASE.map(s => ({
+                    value: s.name,
+                    label: `${s.name} (${s.totalSessions} Sessions) • ${s.category}`
+                  }))
                 ]}
                 required
               />
@@ -717,6 +775,34 @@ export default function BatchesPage() {
                 required
               />
             </div>
+
+            {/* Live Syllabus Breakdown Preview */}
+            {(() => {
+              const sw = findSoftwareDetails(formData.course);
+              if (!sw) return null;
+              return (
+                <div className="p-3.5 bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200/80 rounded-2xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-purple-600" />
+                      <span className="font-bold text-gray-900 text-xs">{sw.name} — Curriculum Breakdown</span>
+                    </div>
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-200 text-purple-800">
+                      {sw.totalSessions} Sessions Defined
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-600">{sw.description}</p>
+                  <div className="max-h-36 overflow-y-auto pr-1 space-y-1 border-t border-purple-100 pt-2">
+                    {sw.sessions.map((sess) => (
+                      <div key={sess.sessionNumber} className="flex items-center gap-2 text-xs p-1.5 bg-white/90 rounded-lg">
+                        <span className="font-mono font-bold text-purple-700 shrink-0 text-[11px]">Session {sess.sessionNumber}:</span>
+                        <span className="text-gray-800 font-medium truncate">{sess.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input
@@ -843,19 +929,22 @@ export default function BatchesPage() {
                 label="Batch Name *"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g. Animation Premium"
+                placeholder="e.g. Photoshop Fundamentals"
                 required
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Select
-                label="Software *"
+                label="Software (Curriculum Syllabus Basis) *"
                 value={formData.course}
-                onChange={(e) => setFormData({ ...formData, course: e.target.value })}
+                onChange={(e) => handleSoftwareSelectChange(e.target.value)}
                 options={[
-                  { value: '', label: 'Select Software' },
-                  ...courseOptions.map(c => ({ value: c, label: c }))
+                  { value: '', label: '-- Select Software --' },
+                  ...SOFTWARE_DATABASE.map(s => ({
+                    value: s.name,
+                    label: `${s.name} (${s.totalSessions} Sessions) • ${s.category}`
+                  }))
                 ]}
                 required
               />
@@ -870,6 +959,34 @@ export default function BatchesPage() {
                 required
               />
             </div>
+
+            {/* Live Syllabus Breakdown Preview */}
+            {(() => {
+              const sw = findSoftwareDetails(formData.course);
+              if (!sw) return null;
+              return (
+                <div className="p-3.5 bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200/80 rounded-2xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-purple-600" />
+                      <span className="font-bold text-gray-900 text-xs">{sw.name} — Curriculum Breakdown</span>
+                    </div>
+                    <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-200 text-purple-800">
+                      {sw.totalSessions} Sessions Defined
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-gray-600">{sw.description}</p>
+                  <div className="max-h-36 overflow-y-auto pr-1 space-y-1 border-t border-purple-100 pt-2">
+                    {sw.sessions.map((sess) => (
+                      <div key={sess.sessionNumber} className="flex items-center gap-2 text-xs p-1.5 bg-white/90 rounded-lg">
+                        <span className="font-mono font-bold text-purple-700 shrink-0 text-[11px]">Session {sess.sessionNumber}:</span>
+                        <span className="text-gray-800 font-medium truncate">{sess.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input
@@ -1194,6 +1311,111 @@ export default function BatchesPage() {
           </div>
         )}
       </Modal>
+
+      {/* Software Session Breakdown Modal */}
+      {viewingBreakdownBatch && (
+        <Modal
+          isOpen={!!viewingBreakdownBatch}
+          onClose={() => setViewingBreakdownBatch(null)}
+          title={`Software Curriculum & Session Breakdown — ${viewingBreakdownBatch.name}`}
+          size="xl"
+        >
+          {(() => {
+            const sw = findSoftwareDetails(viewingBreakdownBatch.course);
+            const sessions = sw ? sw.sessions : getSoftwareSessionBreakdown(viewingBreakdownBatch.course);
+            const completedCount = viewingBreakdownBatch.classesCompleted || 0;
+
+            return (
+              <div className="space-y-4">
+                <div className="p-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 text-white rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-purple-500/20">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="px-2.5 py-0.5 bg-white/20 backdrop-blur-md rounded text-xs font-mono font-bold">
+                        {viewingBreakdownBatch.batchIdCode || `BATCH-${viewingBreakdownBatch.id}`}
+                      </span>
+                      <span className="text-xs text-white/90 font-medium">
+                        {sw?.category || 'MAAC Academic Course'}
+                      </span>
+                    </div>
+                    <h4 className="text-xl font-bold">{sw?.name || viewingBreakdownBatch.course}</h4>
+                    <p className="text-xs text-white/80 mt-0.5">Faculty: <strong>{viewingBreakdownBatch.teacherName}</strong> • Lab: <strong>{viewingBreakdownBatch.room}</strong> • Time: <strong>{viewingBreakdownBatch.startTime} - {viewingBreakdownBatch.endTime}</strong></p>
+                  </div>
+                  <div className="text-right sm:border-l sm:border-white/20 sm:pl-4">
+                    <span className="text-3xl font-black">{sessions.length}</span>
+                    <p className="text-xs text-white/80 font-medium">Total Sessions</p>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between text-xs text-gray-700">
+                    <span className="font-semibold">Syllabus Progress: <strong>{completedCount}</strong> of <strong>{sessions.length}</strong> sessions completed</span>
+                    <span className="font-bold text-emerald-700">{Math.min(100, Math.round((completedCount / (sessions.length || 1)) * 100))}% syllabus covered</span>
+                  </div>
+                  <div className="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden">
+                    <div
+                      className="bg-gradient-to-r from-purple-600 to-emerald-500 h-full rounded-full transition-all duration-300"
+                      style={{ width: `${Math.min(100, Math.round((completedCount / (sessions.length || 1)) * 100))}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className="max-h-96 overflow-y-auto divide-y divide-gray-100 border border-gray-200 rounded-2xl">
+                  {sessions.map((sess, idx) => {
+                    const isCompleted = idx < completedCount;
+                    return (
+                      <div
+                        key={sess.sessionNumber}
+                        className={`p-3.5 flex items-start gap-3 transition-colors ${
+                          isCompleted ? 'bg-emerald-50/50' : 'hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
+                          isCompleted
+                            ? 'bg-emerald-500 text-white shadow-sm'
+                            : 'bg-purple-100 text-purple-700 font-mono'
+                        }`}>
+                          {isCompleted ? '✓' : sess.sessionNumber}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <div>
+                              <p className="text-xs font-mono font-bold text-purple-700">Session {sess.sessionNumber}</p>
+                              <p className={`text-sm font-semibold ${isCompleted ? 'text-emerald-950' : 'text-gray-900'}`}>
+                                {sess.title}
+                              </p>
+                            </div>
+                            <Badge variant={isCompleted ? 'success' : 'default'} className="text-[10px] shrink-0">
+                              {isCompleted ? 'Completed' : 'Upcoming'}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setViewingBreakdownBatch(null);
+                      router.push(`/attendance?batch=${viewingBreakdownBatch.id}`);
+                    }}
+                    className="text-xs text-emerald-700 border-emerald-300 hover:bg-emerald-50 font-bold"
+                  >
+                    <ClipboardCheck className="w-4 h-4 mr-1.5" />
+                    Mark Attendance For This Batch
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={() => setViewingBreakdownBatch(null)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+        </Modal>
+      )}
     </div>
   );
 }
