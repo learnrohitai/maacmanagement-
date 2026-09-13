@@ -18,7 +18,8 @@ import {
   Menu,
   X,
   UserCheck,
-  UserPlus
+  UserPlus,
+  TrendingUp
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -37,6 +38,7 @@ const navItems: NavItem[] = [
   { label: 'Students', href: '/students', icon: <GraduationCap className="w-5 h-5" />, roles: ['admin', 'teacher', 'academic-manager'] },
   { label: 'Teachers', href: '/teachers', icon: <Users className="w-5 h-5" />, roles: ['admin', 'academic-manager'] },
   { label: 'Attendance', href: '/attendance', icon: <ClipboardList className="w-5 h-5" />, roles: ['admin'] },
+  { label: 'Course Progress', href: '/course-progress', icon: <TrendingUp className="w-5 h-5" />, roles: ['admin', 'academic-manager'] },
   { label: 'Lesson Plans', href: '/lesson-plans', icon: <Calendar className="w-5 h-5" />, roles: ['admin'] },
   { label: 'Finance', href: '/finance', icon: <CreditCard className="w-5 h-5" />, roles: ['admin'] },
   { label: 'Settings', href: '/settings', icon: <Settings className="w-5 h-5" />, roles: ['admin', 'teacher', 'academic-manager', 'counselor'] },
