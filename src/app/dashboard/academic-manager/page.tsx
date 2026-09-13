@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { User as UserType, Batch } from '@/types';
-import { COURSE_DATABASE, getSoftwaresForCourse, findSoftwareDetails, calculateStudentCourseProgress, StudentCourseProgressReport } from '@/lib/softwareData';
+import { COURSE_DATABASE, findSoftwareDetails, calculateStudentCourseProgress, calculateBatchTracker, calculateCourseTracker, StudentCourseProgressReport } from '@/lib/softwareData';
 import StudentCurriculumModal from '@/components/curriculum/StudentCurriculumModal';
 
 type ScheduleView = 'day-mwf' | 'day-tts' | 'teacher';
@@ -150,36 +150,18 @@ export default function AcademicManagerDashboard() {
     trackerCourseStudents.forEach(s => {
       map.set(s.id, {
         student: s,
-        report: calculateStudentCourseProgress(s.id, s.course, attendance, s.course),
+        report: calculateStudentCourseProgress(s.id, s.course, attendance, s.course, batches),
       });
     });
     return map;
-  }, [trackerCourseStudents, attendance]);
+  }, [trackerCourseStudents, attendance, batches]);
 
   // Aggregate per-software progress across all students in the selected course
-  const trackerCoursePipeline = useMemo(() => {
-    const softwares = getSoftwaresForCourse(trackerCourse);
-    return softwares.map(sw => {
-      let attendedSum = 0;
-      let totalSessions = sw.totalSessions;
-      let studentsStarted = 0;
-      trackerCourseReports.forEach(({ report }) => {
-        const stat = report.softwares.find(x => x.softwareId === sw.id);
-        if (stat) {
-          attendedSum += stat.attendedSessions;
-          if (stat.attendedSessions > 0) studentsStarted++;
-        }
-      });
-      const studentCount = trackerCourseReports.size || 1;
-      const avgCompletion = Math.round(attendedSum / (totalSessions * studentCount) * 100);
-      return {
-        software: sw,
-        avgCompletion,
-        studentsStarted,
-        totalStudents: trackerCourseReports.size,
-      };
-    });
-  }, [trackerCourse, trackerCourseReports]);
+  // (shared accurate logic: session-deduped, latest mark per session wins)
+  const trackerCoursePipeline = useMemo(
+    () => calculateCourseTracker(trackerCourse, allStudents, attendance, batches).pipeline,
+    [trackerCourse, allStudents, attendance, batches]
+  );
 
   const trackerFilteredCourseStudents = useMemo(() => {
     const term = trackerStudentSearch.toLowerCase();
@@ -193,10 +175,10 @@ export default function AcademicManagerDashboard() {
   }, [trackerCourseReports, trackerStudentSearch]);
 
   // ===== Software-wise analysis (Course tracker drilldown) =====
-  const analysisSoftware = useMemo(
-    () => trackerCoursePipeline.find(p => p.software.id === analysisSoftwareId)?.software,
-    [trackerCoursePipeline, analysisSoftwareId]
-  );
+  const analysisSoftware = useMemo(() => {
+    const stat = trackerCoursePipeline.find(p => p.softwareId === analysisSoftwareId);
+    return stat ? findSoftwareDetails(stat.softwareId) : undefined;
+  }, [trackerCoursePipeline, analysisSoftwareId]);
 
   // Which courses require this software?
   const analysisRequiredByCourses = useMemo(() => {
@@ -229,6 +211,8 @@ export default function AcademicManagerDashboard() {
 
   // ===== Batch-wise (software) tracker computations =====
   // Every batch teaches ONE software; this tracker drills into that software's sessions.
+  // Shared accurate logic: sessions deduped by number, majority-decides conducted,
+  // per-student counts are distinct attended sessions (duplicates never inflate).
   const activeTrackerBatch = batches.find(b => b.id === trackerBatchId) || batches[0];
   const trackerBatchSoftware = findSoftwareDetails(activeTrackerBatch?.course);
 
@@ -237,52 +221,45 @@ export default function AcademicManagerDashboard() {
     return allStudents.filter(s => activeTrackerBatch.studentIds.includes(s.id));
   }, [allStudents, activeTrackerBatch]);
 
+  // Accurate batch tracker result (sessions + per-student stats)
+  const batchTrackerResult = useMemo(() => {
+    if (!activeTrackerBatch) return null;
+    return calculateBatchTracker(activeTrackerBatch, attendance, users);
+  }, [activeTrackerBatch, attendance, users]);
+
   // Session-by-session coverage for the batch's software
   const trackerBatchSessions = useMemo(() => {
-    if (!activeTrackerBatch) return [];
-    const recs = attendance.filter(a => a.batchId === activeTrackerBatch.id);
-    return (trackerBatchSoftware?.sessions || []).map(s => {
-      const sessionRecs = recs.filter(r => {
-        let sNum = r.sessionNumber;
-        if (!sNum && r.topic) {
-          const m = r.topic.match(/Session\s+(\d+)/i);
-          if (m) sNum = parseInt(m[1]);
-        }
-        return sNum === s.sessionNumber;
-      });
-      const last = sessionRecs.length > 0 ? sessionRecs[sessionRecs.length - 1] : undefined;
-      const sessionStatus: 'present' | 'absent' | 'late' | 'pending' = last ? last.status : 'pending';
+    if (!batchTrackerResult) return [];
+    return batchTrackerResult.sessions.map(s => {
+      const status: 'present' | 'absent' | 'late' | 'pending' =
+        s.conducted ? 'present' : s.studentsMarked > 0 ? 'absent' : 'pending';
       return {
         sessionNumber: s.sessionNumber,
         title: s.title,
-        status: sessionStatus,
-        date: last?.date,
-        studentsPresent: sessionRecs.filter(r => r.status === 'present' || r.status === 'late').length,
-        studentsMarked: sessionRecs.length,
+        status,
+        date: s.lastDate,
+        studentsPresent: s.studentsPresent,
+        studentsMarked: s.studentsMarked,
       };
     });
-  }, [activeTrackerBatch, attendance, trackerBatchSoftware]);
+  }, [batchTrackerResult]);
 
-  const trackerBatchCoveredSessions = trackerBatchSessions.filter(s => s.status !== 'pending').length;
+  const trackerBatchCoveredSessions = batchTrackerResult?.conductedSessions ?? 0;
 
-  // Per-student attendance stats scoped to this batch's software
-  const trackerBatchStudentStats = useMemo(() => {
-    const total = trackerBatchSoftware?.totalSessions || 0;
-    return trackerBatchStudents.map(student => {
-      const recs = attendance.filter(
-        a => a.studentId === student.id && a.batchId === activeTrackerBatch?.id
-      );
-      const present = recs.filter(r => r.status === 'present' || r.status === 'late').length;
-      return {
-        student,
-        attended: present,
-        absent: Math.max(0, recs.length - present),
-        total,
-        remaining: Math.max(0, total - present),
-        completion: total > 0 ? Math.round((present / total) * 100) : 0,
-      };
-    });
-  }, [trackerBatchStudents, attendance, activeTrackerBatch, trackerBatchSoftware]);
+  // Per-student attendance stats scoped to this batch's software (deduped sessions)
+  const trackerBatchStudentStats = batchTrackerResult?.students ?? [];
+
+  // Lookups for rendering student names/codes in the batch tracker table
+  const studentNameLookup = useMemo(() => {
+    const m = new Map<string, string>();
+    allStudents.forEach(s => m.set(s.id, s.name));
+    return m;
+  }, [allStudents]);
+  const studentCodeLookup = useMemo(() => {
+    const m = new Map<string, string>();
+    allStudents.forEach(s => m.set(s.id, s.studentId || ''));
+    return m;
+  }, [allStudents]);
 
   return (
     <div className="space-y-6">
@@ -334,7 +311,7 @@ export default function AcademicManagerDashboard() {
               <h3 className="text-lg font-bold text-gray-900">Curriculum Trackers</h3>
             </div>
             <p className="text-xs text-gray-500 mt-0.5">
-              Batches teach a single software module — track every session. Separately, track each course's full software pipeline per student.
+              Batches teach a single software module — track every session. Separately, track each course&apos;s full software pipeline per student.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -435,17 +412,13 @@ export default function AcademicManagerDashboard() {
                           ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
                           : s.status === 'absent'
                             ? 'bg-red-50 border-red-200 text-red-800'
-                            : s.status === 'late'
-                              ? 'bg-amber-50 border-amber-200 text-amber-800'
-                              : 'bg-gray-50 border-gray-200 text-gray-500';
+                            : 'bg-gray-50 border-gray-200 text-gray-500';
                       const statusLabel =
                         s.status === 'present'
                           ? 'Conducted'
-                          : s.status === 'late'
-                            ? 'Conducted (Late)'
-                            : s.status === 'absent'
-                              ? 'Marked Absent'
-                              : 'Not Conducted';
+                          : s.status === 'absent'
+                            ? 'Marked Absent'
+                            : 'Not Conducted';
                       return (
                         <div key={s.sessionNumber} className={`p-2.5 rounded-xl border text-xs flex items-center gap-2 ${style}`}>
                           <span className="font-mono font-bold shrink-0">S{s.sessionNumber}</span>
@@ -477,11 +450,11 @@ export default function AcademicManagerDashboard() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
-                        {trackerBatchStudentStats.map(({ student, attended, remaining, completion }) => (
-                          <tr key={student.id} className="hover:bg-gray-50/60">
+                        {trackerBatchStudentStats.map(({ studentId, attended, remaining, completion }) => (
+                          <tr key={studentId} className="hover:bg-gray-50/60">
                             <td className="py-2.5 px-3">
-                              <div className="font-medium text-gray-900 text-xs">{student.name}</div>
-                              <div className="text-[10px] font-mono text-emerald-700">{student.studentId || 'MAAC-STU'}</div>
+                              <div className="font-medium text-gray-900 text-xs">{studentNameLookup.get(studentId) ?? studentId}</div>
+                              <div className="text-[10px] font-mono text-emerald-700">{studentCodeLookup.get(studentId) || 'MAAC-STU'}</div>
                             </td>
                             <td className="py-2.5 px-3 text-xs font-bold text-emerald-700">{attended}/{trackerBatchSoftware?.totalSessions}</td>
                             <td className="py-2.5 px-3 text-xs font-bold text-orange-600">{remaining}</td>
@@ -500,7 +473,10 @@ export default function AcademicManagerDashboard() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => setTrackerStudent(student)}
+                                onClick={() => {
+                                  const student = allStudents.find(s => s.id === studentId);
+                                  if (student) setTrackerStudent(student);
+                                }}
                                 className="text-xs px-2.5 py-1 text-purple-700 border-purple-200 hover:bg-purple-50 font-semibold"
                               >
                                 Sessions
@@ -551,13 +527,13 @@ export default function AcademicManagerDashboard() {
             Required Softwares for {trackerCourse} — click any software for analysis
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
-            {trackerCoursePipeline.map(({ software, avgCompletion, studentsStarted, totalStudents }, idx) => (
+            {trackerCoursePipeline.map(({ softwareId, softwareName, totalSessions, avgCompletion, studentsStarted, totalStudents }, idx) => (
               <button
-                key={software.id}
+                key={softwareId}
                 type="button"
-                onClick={() => setAnalysisSoftwareId(analysisSoftwareId === software.id ? null : software.id)}
+                onClick={() => setAnalysisSoftwareId(analysisSoftwareId === softwareId ? null : softwareId)}
                 className={`p-3 rounded-xl border text-left space-y-2 transition-all cursor-pointer ${
-                  analysisSoftwareId === software.id
+                  analysisSoftwareId === softwareId
                     ? 'border-purple-500 bg-purple-50/70 ring-2 ring-purple-400/40 shadow-md'
                     : 'border-gray-200 bg-white hover:border-purple-300 hover:shadow-sm'
                 }`}
@@ -565,10 +541,10 @@ export default function AcademicManagerDashboard() {
                 <div className="flex items-start justify-between gap-1">
                   <p className="text-xs font-bold text-gray-900 leading-tight">
                     <span className="text-[10px] font-mono text-purple-500 mr-1">{idx + 1}.</span>
-                    {software.name}
+                    {softwareName}
                   </p>
                   <span className="text-[10px] font-bold text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded shrink-0">
-                    {software.totalSessions}S
+                    {totalSessions}S
                   </span>
                 </div>
                 <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
@@ -597,7 +573,7 @@ export default function AcademicManagerDashboard() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-wider text-purple-600">
-                  Software-wise Analysis — Module {trackerCoursePipeline.findIndex(p => p.software.id === analysisSoftware.id) + 1} in {trackerCourse}
+                  Software-wise Analysis — Module {trackerCoursePipeline.findIndex(p => p.softwareId === analysisSoftware.id) + 1} in {trackerCourse}
                 </p>
                 <h4 className="text-lg font-extrabold text-gray-900">{analysisSoftware.name}</h4>
                 <p className="text-xs text-gray-600 max-w-xl">{analysisSoftware.description}</p>
@@ -627,7 +603,7 @@ export default function AcademicManagerDashboard() {
               <div className="p-3 bg-white rounded-xl border border-gray-200">
                 <p className="text-[10px] text-gray-500 font-semibold uppercase">Avg Completion ({trackerCourse})</p>
                 <p className="text-xl font-extrabold text-emerald-700">
-                  {trackerCoursePipeline.find(p => p.software.id === analysisSoftware.id)?.avgCompletion ?? 0}%
+                  {trackerCoursePipeline.find(p => p.softwareId === analysisSoftware.id)?.avgCompletion ?? 0}%
                 </p>
               </div>
             </div>

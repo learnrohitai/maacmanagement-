@@ -1223,22 +1223,62 @@ export interface StudentCourseProgressReport {
   softwares: SoftwareProgressStat[];
 }
 
+export interface TrackingAttendanceRecord {
+  studentId: string;
+  softwareName?: string;
+  topic?: string;
+  sessionNumber?: number;
+  status: 'present' | 'absent' | 'late';
+  date: string;
+  batchId?: string;
+  markedAt?: string;
+}
+// Shared attendance record shape for all tracking helpers (structural superset of
+// the Attendance type, so Attendance[] can be passed directly).
+
+// Extract the session number from a record, falling back to "Session N" in topic.
+const extractSessionNumber = (rec: { sessionNumber?: number; topic?: string }): number | undefined => {
+  if (rec.sessionNumber) return rec.sessionNumber;
+  if (rec.topic) {
+    const m = rec.topic.match(/Session\s+(\d+)/i);
+    if (m) return parseInt(m[1]);
+  }
+  return undefined;
+};
+
+// Resolve which software a record belongs to: explicit softwareName first, then
+// the course taught by the record's batch (batchId -> course lookup).
+const resolveRecordSoftwareId = (
+  rec: Pick<TrackingAttendanceRecord, 'softwareName' | 'batchId'>,
+  batchCourseLookup?: Map<string, string>
+): string | undefined => {
+  if (rec.softwareName) {
+    const sw = findSoftwareDetails(rec.softwareName);
+    if (sw) return sw.id;
+  }
+  if (rec.batchId && batchCourseLookup && batchCourseLookup.size > 0) {
+    const course = batchCourseLookup.get(rec.batchId);
+    if (course) {
+      const sw = findSoftwareDetails(course);
+      if (sw) return sw.id;
+    }
+  }
+  return undefined;
+};
+
 export const calculateStudentCourseProgress = (
   studentId: string,
   courseName: string | undefined,
-  attendanceRecords: Array<{
-    studentId: string;
-    softwareName?: string;
-    topic?: string;
-    sessionNumber?: number;
-    status: 'present' | 'absent' | 'late';
-    date: string;
-    batchId?: string;
-  }>,
-  currentBatchCourse?: string
+  attendanceRecords: TrackingAttendanceRecord[],
+  currentBatchCourse?: string,
+  batches?: Array<{ id: string; course: string }>
 ): StudentCourseProgressReport => {
   const courseSoftwares = getSoftwaresForCourse(courseName);
   const studentAttendance = attendanceRecords.filter(a => a.studentId === studentId);
+  const batchCourseLookup = new Map<string, string>();
+  (batches ?? []).forEach(b => {
+    if (b?.id) batchCourseLookup.set(String(b.id), b.course);
+  });
 
   let overallTotal = 0;
   let overallAttended = 0;
@@ -1247,29 +1287,29 @@ export const calculateStudentCourseProgress = (
   let pendingCount = 0;
 
   const softwareStats: SoftwareProgressStat[] = courseSoftwares.map(sw => {
-    // Find all attendance marked for this software or matching software name/id
-    const swRecords = studentAttendance.filter(a => {
-      if (a.softwareName) {
-        const swItem = findSoftwareDetails(a.softwareName);
-        if (swItem && swItem.id === sw.id) return true;
-      }
-      return false;
-    });
+    // Find all attendance marked for this software (explicit softwareName first,
+    // then the course taught by the record's batch)
+    const swRecords = studentAttendance.filter(a => resolveRecordSoftwareId(a, batchCourseLookup) === sw.id);
 
     const attendedSessionNums = new Set<number>();
     const sessionStatusMap: Record<number, { status: 'present' | 'absent' | 'late'; date: string }> = {};
 
+    // Keep only the most recent mark per session (markedAt wins, then array order)
+    // so re-marked or duplicated records cannot inflate or corrupt progress.
+    const latestPerSession = new Map<number, TrackingAttendanceRecord>();
     swRecords.forEach(rec => {
-      let sNum = rec.sessionNumber;
-      if (!sNum && rec.topic) {
-        const match = rec.topic.match(/Session\s+(\d+)/i);
-        if (match) sNum = parseInt(match[1]);
+      const sNum = extractSessionNumber(rec);
+      if (!sNum) return;
+      const existing = latestPerSession.get(sNum);
+      if (!existing || (existing.markedAt ?? '') <= (rec.markedAt ?? '')) {
+        latestPerSession.set(sNum, rec);
       }
-      if (sNum) {
-        sessionStatusMap[sNum] = { status: rec.status, date: rec.date };
-        if (rec.status === 'present' || rec.status === 'late') {
-          attendedSessionNums.add(sNum);
-        }
+    });
+
+    latestPerSession.forEach((rec, sNum) => {
+      sessionStatusMap[sNum] = { status: rec.status, date: rec.date };
+      if (rec.status === 'present' || rec.status === 'late') {
+        attendedSessionNums.add(sNum);
       }
     });
 
@@ -1331,5 +1371,241 @@ export const calculateStudentCourseProgress = (
     overallRemainingSessions: overallRemaining,
     overallCompletionPercentage,
     softwares: softwareStats
+  };
+};
+
+// =========================================================================
+// === BATCH-WISE & COURSE-WISE TRACKING (shared accurate logic) ==========
+// =========================================================================
+
+export interface BatchTrackedBatch {
+  id: string;
+  batchIdCode?: string;
+  name: string;
+  course: string;
+  teacherName: string;
+  enrolledStudents: number;
+  studentIds: string[];
+  status?: string;
+  classesCompleted?: number;
+  classesRemaining?: number;
+}
+
+export interface BatchSessionStat {
+  sessionNumber: number;
+  title: string;
+  // "conducted" = the class happened (a majority of present/late marks, or at
+  // least one present mark). "absent" = every marked student was absent, i.e.
+  // the session was marked but nobody attended.
+  conducted: boolean;
+  studentsMarked: number;
+  studentsPresent: number;
+  firstDate?: string;
+  lastDate?: string;
+}
+
+export interface BatchStudentStat {
+  studentId: string;
+  studentName: string;
+  studentCode?: string;
+  attended: number; // distinct sessions attended (present/late)
+  absent: number; // distinct sessions marked absent
+  totalSessions: number;
+  remaining: number;
+  completion: number; // percentage 0-100
+}
+
+export interface BatchTrackerResult {
+  batchId: string;
+  softwareId?: string;
+  softwareName: string;
+  totalSessions: number;
+  // Sessions actually conducted (deduped by session number)
+  conductedSessions: number;
+  remainingSessions: number;
+  completionPercentage: number;
+  sessions: BatchSessionStat[];
+  students: BatchStudentStat[];
+}
+
+export interface CourseSoftwarePipelineStat {
+  softwareId: string;
+  softwareName: string;
+  totalSessions: number;
+  avgCompletion: number; // percentage 0-100
+  studentsStarted: number;
+  studentsCompleted: number;
+  totalStudents: number;
+}
+
+export interface CourseTrackerResult {
+  courseId?: string;
+  courseName: string;
+  totalStudents: number;
+  overallAvgCompletion: number; // percentage 0-100
+  pipeline: CourseSoftwarePipelineStat[];
+  students: Array<{ studentId: string; studentName: string; studentCode?: string; completion: number; attended: number; totalSessions: number } >;
+}
+
+/**
+ * Batch-wise tracker: accurate session-by-session tracking for a single batch.
+ *
+ * A session counts as CONDUCTED when at least one student in the batch was
+ * marked present/late for it (or a majority of marks were present/late), never
+ * double-counting duplicated marks for the same session. Per-student attendance
+ * counts distinct sessions, so duplicate marks never inflate progress.
+ */
+export const calculateBatchTracker = (
+  batch: BatchTrackedBatch,
+  attendanceRecords: TrackingAttendanceRecord[],
+  allUsers?: Array<{ id: string; name: string; studentId?: string; role?: string }>
+): BatchTrackerResult => {
+  const sw = findSoftwareDetails(batch.course);
+  const totalSessions = sw?.totalSessions ?? batch.classesCompleted ?? 16;
+  const batchRecs = attendanceRecords.filter(a => a.batchId === batch.id);
+
+  // --- Session-by-session: dedupe by session number, majority decides ---
+  const perSession = new Map<number, TrackingAttendanceRecord[]>();
+  batchRecs.forEach(rec => {
+    const sNum = extractSessionNumber(rec);
+    if (!sNum) return;
+    const list = perSession.get(sNum);
+    if (list) list.push(rec);
+    else perSession.set(sNum, [rec]);
+  });
+
+  const sessions: BatchSessionStat[] = (sw?.sessions ?? []).map(s => {
+    const recs = perSession.get(s.sessionNumber) ?? [];
+    const presentCount = recs.filter(r => r.status === 'present' || r.status === 'late').length;
+    // Conducted if at least one present mark, or a majority of all marks present
+    const conducted = recs.length > 0 && (presentCount > 0 || presentCount / recs.length >= 0.5);
+    const dates = recs.map(r => r.date).filter(Boolean).sort();
+    return {
+      sessionNumber: s.sessionNumber,
+      title: s.title,
+      conducted,
+      studentsMarked: recs.length,
+      studentsPresent: presentCount,
+      firstDate: dates[0],
+      lastDate: dates[dates.length - 1],
+    };
+  });
+
+  const conductedSessions = sessions.filter(s => s.conducted).length;
+
+  // --- Per-student: distinct attended sessions (present/late), deduped ---
+  const studentNameLookup = new Map<string, { name: string; code?: string }>();
+  (allUsers ?? []).forEach(u => {
+    if (u?.id) studentNameLookup.set(String(u.id), { name: u.name, code: u.studentId });
+  });
+
+  // studentId -> set of attended session numbers (present/late only)
+  const attendedByStudent = new Map<string, Set<number>>();
+  const markedByStudent = new Map<string, Set<number>>();
+  batchRecs.forEach(rec => {
+    const sNum = extractSessionNumber(rec);
+    if (!sNum) return;
+    if (rec.status === 'present' || rec.status === 'late') {
+      if (!attendedByStudent.has(rec.studentId)) attendedByStudent.set(rec.studentId, new Set());
+      attendedByStudent.get(rec.studentId)!.add(sNum);
+    }
+    if (!markedByStudent.has(rec.studentId)) markedByStudent.set(rec.studentId, new Set());
+    markedByStudent.get(rec.studentId)!.add(sNum);
+  });
+
+  const students: BatchStudentStat[] = batch.studentIds.map(sid => {
+    const attendedSet = attendedByStudent.get(sid) ?? new Set<number>();
+    const markedSet = markedByStudent.get(sid) ?? new Set<number>();
+    const attended = attendedSet.size;
+    const markedCount = markedSet.size;
+    // Absent = sessions marked but not attended (never negative)
+    const absent = Math.max(0, markedCount - attended);
+    const completion = totalSessions > 0 ? Math.round((attended / totalSessions) * 100) : 0;
+    const info = studentNameLookup.get(sid);
+    return {
+      studentId: sid,
+      studentName: info?.name ?? sid,
+      studentCode: info?.code,
+      attended,
+      absent,
+      totalSessions,
+      remaining: Math.max(0, totalSessions - attended),
+      completion,
+    };
+  });
+
+  return {
+    batchId: batch.id,
+    softwareId: sw?.id,
+    softwareName: sw?.name ?? batch.course,
+    totalSessions,
+    conductedSessions,
+    remainingSessions: Math.max(0, totalSessions - conductedSessions),
+    completionPercentage: totalSessions > 0 ? Math.round((conductedSessions / totalSessions) * 100) : 0,
+    sessions,
+    students,
+  };
+};
+
+/**
+ * Course-wise tracker: aggregates software-pipeline progress across all
+ * students enrolled in a course program. Uses calculateStudentCourseProgress
+ * per student (deduped session logic) and averages per software.
+ */
+export const calculateCourseTracker = (
+  courseName: string,
+  students: Array<{ id: string; name: string; studentId?: string; course?: string }>,
+  attendanceRecords: TrackingAttendanceRecord[],
+  batches?: Array<{ id: string; course: string }>
+): CourseTrackerResult => {
+  const course = findCourseDetails(courseName);
+  const softwares = getSoftwaresForCourse(courseName);
+  const enrolled = students.filter(s => s.course === courseName);
+
+  const perStudentReports = enrolled.map(s => ({
+    student: s,
+    report: calculateStudentCourseProgress(s.id, courseName, attendanceRecords, courseName, batches),
+  }));
+
+  const pipeline: CourseSoftwarePipelineStat[] = softwares.map(sw => {
+    let attendedSum = 0;
+    let started = 0;
+    let completed = 0;
+    perStudentReports.forEach(({ report }) => {
+      const stat = report.softwares.find(x => x.softwareId === sw.id);
+      if (!stat) return;
+      attendedSum += stat.attendedSessions;
+      if (stat.attendedSessions > 0) started++;
+      if (stat.status === 'completed') completed++;
+    });
+    const studentCount = perStudentReports.length || 1;
+    return {
+      softwareId: sw.id,
+      softwareName: sw.name,
+      totalSessions: sw.totalSessions,
+      avgCompletion: Math.round(attendedSum / (sw.totalSessions * studentCount) * 100),
+      studentsStarted: started,
+      studentsCompleted: completed,
+      totalStudents: perStudentReports.length,
+    };
+  });
+
+  const overallTotalSessions = perStudentReports.reduce((acc, r) => acc + r.report.overallTotalSessions, 0);
+  const overallAttended = perStudentReports.reduce((acc, r) => acc + r.report.overallAttendedSessions, 0);
+
+  return {
+    courseId: course?.id,
+    courseName,
+    totalStudents: perStudentReports.length,
+    overallAvgCompletion: overallTotalSessions > 0 ? Math.round((overallAttended / overallTotalSessions) * 100) : 0,
+    pipeline,
+    students: perStudentReports.map(({ student, report }) => ({
+      studentId: student.id,
+      studentName: student.name,
+      studentCode: student.studentId,
+      completion: report.overallCompletionPercentage,
+      attended: report.overallAttendedSessions,
+      totalSessions: report.overallTotalSessions,
+    })),
   };
 };
