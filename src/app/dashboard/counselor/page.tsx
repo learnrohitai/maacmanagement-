@@ -198,7 +198,7 @@ export default function CounselorDashboard() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 rounded-2xl p-8 text-white relative overflow-hidden shadow-xl shadow-teal-900/10"
+        className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-white relative overflow-hidden shadow-xl shadow-teal-900/10"
       >
         <div className="absolute inset-0 opacity-15">
           <div className="absolute top-0 right-0 w-80 h-80 bg-white rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
@@ -217,16 +217,18 @@ export default function CounselorDashboard() {
           <div className="flex flex-col sm:flex-row gap-3 shrink-0">
             <Button
               onClick={() => setShowReport(true)}
-              className="bg-white text-teal-800 hover:bg-teal-50 shadow-2xl font-bold text-base px-6 py-3.5 rounded-xl border border-white"
+              variant="white"
+              className="font-bold text-base px-6 py-3.5 rounded-xl"
             >
               <FileBarChart className="w-5 h-5 mr-2 text-teal-600" />
               Monthly Report
             </Button>
             <Button
               onClick={() => router.push('/admission/new')}
-              className="bg-emerald-700 text-white hover:bg-emerald-800 shadow-2xl font-bold text-base px-6 py-3.5 rounded-xl border border-emerald-500/40"
+              variant="white"
+              className="font-bold text-base px-6 py-3.5 rounded-xl"
             >
-              <GraduationCap className="w-5 h-5 mr-2" />
+              <GraduationCap className="w-5 h-5 mr-2 text-teal-600" />
               Create Admission
             </Button>
           </div>
@@ -520,8 +522,9 @@ export default function CounselorDashboard() {
             </div>
             <Button
               size="sm"
+              variant="success"
               onClick={() => router.push('/admission/new')}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5"
+              className="text-xs px-3 py-1.5"
             >
               <GraduationCap className="w-3.5 h-3.5 mr-1" />
               New Admission
@@ -600,7 +603,7 @@ export default function CounselorDashboard() {
         >
           <div className="space-y-4 text-sm max-h-[75vh] overflow-y-auto pr-1">
             <div className="flex items-center gap-4 bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-emerald-500 flex items-center justify-center text-white text-xl font-bold">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-white text-xl font-bold">
                 {selectedStudentDetail.name.charAt(0)}
               </div>
               <div>

@@ -36,6 +36,11 @@ select option {
   opacity: 1;
 }
 
+::-moz-selection {
+  background-color: rgba(147, 51, 234, 0.2);
+  color: #0f172a;
+}
+
 ::selection {
   background-color: rgba(147, 51, 234, 0.2);
   color: #0f172a;

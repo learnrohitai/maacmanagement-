@@ -531,8 +531,9 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
                 {currentStep < 3 ? (
                   <Button
                     type="button"
+                    variant="success"
                     onClick={handleNext}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-6 py-2.5 shadow-md font-semibold"
+                    className="text-xs px-6 py-2.5 font-semibold"
                   >
                     Continue to {currentStep === 1 ? 'Program Details' : 'Verification'}
                     <ArrowRight className="w-4 h-4 ml-1.5" />
@@ -540,7 +541,8 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
                 ) : (
                   <Button
                     type="submit"
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm px-7 py-3 shadow-lg font-bold shadow-emerald-600/20"
+                    variant="success"
+                    className="text-sm px-7 py-3 font-bold shadow-emerald-600/20"
                   >
                     <CheckCircle2 className="w-4 h-4 mr-2" />
                     Complete Admission Entry

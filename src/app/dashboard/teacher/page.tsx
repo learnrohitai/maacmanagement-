@@ -56,6 +56,7 @@ export default function TeacherDashboard() {
       icon: <CheckCircle className="w-6 h-6" />,
       color: 'orange' as const,
       trend: `${todaySchedule.filter(s => s.markedCount === 0).length} batch(es) pending`,
+      trendDirection: 'down' as const,
     },
   ];
 

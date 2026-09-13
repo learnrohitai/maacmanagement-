@@ -66,10 +66,10 @@ export default function FinancePage() {
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Collected', value: `₹${(totalCollected / 1000).toFixed(0)}K`, color: 'bg-emerald-500', icon: <IndianRupee className="w-5 h-5" />, trend: '+12%' },
-          { label: 'Pending', value: `₹${(totalPending / 1000).toFixed(0)}K`, color: 'bg-amber-500', icon: <Clock className="w-5 h-5" />, trend: '15 records' },
-          { label: 'Overdue', value: `₹${(totalOverdue / 1000).toFixed(0)}K`, color: 'bg-red-500', icon: <AlertTriangle className="w-5 h-5" />, trend: 'Needs attention' },
-          { label: 'Collection Rate', value: '87%', color: 'bg-purple-500', icon: <TrendingUp className="w-5 h-5" />, trend: '+5%' },
+          { label: 'Total Collected', value: `₹${(totalCollected / 1000).toFixed(0)}K`, color: 'bg-emerald-500', icon: <IndianRupee className="w-5 h-5" /> },
+          { label: 'Pending', value: `₹${(totalPending / 1000).toFixed(0)}K`, color: 'bg-amber-500', icon: <Clock className="w-5 h-5" /> },
+          { label: 'Overdue', value: `₹${(totalOverdue / 1000).toFixed(0)}K`, color: 'bg-red-500', icon: <AlertTriangle className="w-5 h-5" /> },
+          { label: 'Collection Rate', value: '87%', color: 'bg-purple-500', icon: <TrendingUp className="w-5 h-5" /> },
         ].map((stat, index) => (
           <motion.div
             key={stat.label}

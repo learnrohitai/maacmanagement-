@@ -83,7 +83,7 @@ export default function Sidebar() {
                 className={`relative flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-150 ${
                   isActive
                     ? 'bg-white/20 text-white shadow-lg shadow-purple-500/20'
-                    : 'text-white/70 hover:bg-white/10 hover:text-white'
+                    : 'text-white/80 hover:bg-white/10 hover:text-white'
                 }`}
               >
                 <span className={isActive ? 'text-cyan-400' : ''}>{item.icon}</span>
@@ -128,7 +128,7 @@ export default function Sidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-purple-600 text-white rounded-xl shadow-lg"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-xl shadow-lg shadow-purple-500/30"
         aria-label="Open menu"
       >
         <Menu className="w-6 h-6" />

@@ -121,7 +121,7 @@ export default function MonthlyReportPage() {
   return (
     <div className="space-y-6">
       {/* Hero banner */}
-      <div className="bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-600 rounded-2xl p-8 text-white relative overflow-hidden shadow-xl shadow-teal-900/10">
+      <div className="bg-gradient-to-r from-teal-600 to-emerald-600 rounded-2xl p-8 text-white relative overflow-hidden shadow-xl shadow-teal-900/10">
         <div className="absolute inset-0 opacity-15">
           <div className="absolute top-0 right-0 w-80 h-80 bg-white rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
         </div>
@@ -389,7 +389,7 @@ export default function MonthlyReportPage() {
         >
           <div className="space-y-4 text-sm max-h-[70vh] overflow-y-auto pr-1">
             <div className="flex items-center gap-4 bg-teal-50/60 p-4 rounded-2xl border border-teal-100">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center text-white text-xl font-bold">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-white text-xl font-bold">
                 {selectedStudentDetail.name.charAt(0)}
               </div>
               <div>

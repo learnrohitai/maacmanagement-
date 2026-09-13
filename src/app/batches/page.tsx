@@ -468,7 +468,7 @@ export default function BatchesPage() {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.97 }}
                       onClick={() => router.push(`/attendance?batch=${batch.id}`)}
-                      className="w-full mb-4 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white text-sm font-bold shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:shadow-emerald-500/40 transition-shadow duration-300"
+                      className="w-full mb-4 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white text-sm font-bold shadow-lg shadow-emerald-600/30 hover:shadow-xl hover:shadow-emerald-600/40 transition-shadow duration-300"
                     >
                       <ClipboardCheck className="w-4 h-4" />
                       Mark Attendance
@@ -715,7 +715,8 @@ export default function BatchesPage() {
                   </Button>
                   <Button
                     type="submit"
-                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5"
+                    variant="warning"
+                    className="font-bold px-5"
                   >
                     Confirm Batch Transfer
                   </Button>
@@ -1317,7 +1318,8 @@ export default function BatchesPage() {
               </Button>
               <Button
                 onClick={handleFinishCreateBatch}
-                className="bg-emerald-600 hover:bg-emerald-700 font-bold px-6"
+                variant="success"
+                className="font-bold px-6"
               >
                 <CheckCircle2 className="w-4 h-4 mr-2" />
                 {selectedStudents.size > 0
@@ -1344,7 +1346,7 @@ export default function BatchesPage() {
 
             return (
               <div className="space-y-4">
-                <div className="p-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 text-white rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-purple-500/20">
+                <div className="p-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-purple-500/20">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="px-2.5 py-0.5 bg-white/20 backdrop-blur-md rounded text-xs font-mono font-bold">
@@ -1370,7 +1372,7 @@ export default function BatchesPage() {
                   </div>
                   <div className="w-full bg-gray-200 h-2.5 rounded-full overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-purple-600 to-emerald-500 h-full rounded-full transition-all duration-300"
+                      className="bg-gradient-to-r from-purple-600 to-indigo-500 h-full rounded-full transition-all duration-300"
                       style={{ width: `${Math.min(100, Math.round((completedCount / (sessions.length || 1)) * 100))}%` }}
                     />
                   </div>

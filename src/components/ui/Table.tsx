@@ -38,7 +38,7 @@ export default function Table<T extends { id: string }>({ columns, data, onRowCl
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
-              className={`hover:bg-purple-50/50 transition-colors ${
+              className={`transition-colors hover:bg-purple-50/60 ${
                 onRowClick ? 'cursor-pointer' : ''
               }`}
               onClick={() => onRowClick?.(item)}

@@ -218,7 +218,36 @@ function AttendanceContent() {
 
   const markAllPresent = () => {
     batchStudents.forEach(student => {
-      handleMarkAttendance(student.id, student.name, 'present', selectedTopic || studentTopics[student.id] || '');
+      const rec = attendance.find(a => a.studentId === student.id && a.batchId === activeBatchId && a.date === selectedDate);
+      handleMarkAttendance(
+        student.id,
+        student.name,
+        'present',
+        selectedTopic || studentTopics[student.id] || '',
+        studentAssignments[student.id] ?? rec?.assignmentSubmitted,
+        studentGrades[student.id] || rec?.grade
+      );
+    });
+  };
+
+  const DEFAULT_ASSIGNMENT_GRADE = 'B';
+
+  // Mark every student's assignment as submitted with the default grade (B)
+  const markAllAssignments = () => {
+    batchStudents.forEach(student => {
+      const rec = attendance.find(a => a.studentId === student.id && a.batchId === activeBatchId && a.date === selectedDate);
+      const status = rec?.status || 'present';
+      const topic = studentTopics[student.id] || rec?.topic || selectedTopic || '';
+      setStudentAssignments(prev => ({ ...prev, [student.id]: true }));
+      setStudentGrades(prev => ({ ...prev, [student.id]: rec?.grade || studentGrades[student.id] || DEFAULT_ASSIGNMENT_GRADE }));
+      handleMarkAttendance(
+        student.id,
+        student.name,
+        status,
+        topic,
+        true,
+        rec?.grade || studentGrades[student.id] || DEFAULT_ASSIGNMENT_GRADE
+      );
     });
   };
 
@@ -258,7 +287,14 @@ function AttendanceContent() {
       batchStudents.forEach(student => {
         const rec = attendance.find(a => a.studentId === student.id && a.batchId === activeBatchId && a.date === selectedDate);
         if (!rec || !rec.status) {
-          handleMarkAttendance(student.id, student.name, 'present', studentTopics[student.id] || selectedTopic || '');
+          handleMarkAttendance(
+            student.id,
+            student.name,
+            'present',
+            studentTopics[student.id] || selectedTopic || '',
+            studentAssignments[student.id],
+            studentGrades[student.id]
+          );
         }
       });
     }
@@ -392,7 +428,7 @@ function AttendanceContent() {
       {activeBatch && (
         <>
           {/* Batch Info Bar & Software Syllabus Overview */}
-          <Card className="p-5 bg-gradient-to-r from-purple-50 via-indigo-50 to-cyan-50 border-purple-200 shadow-sm">
+          <Card className="p-5 bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200 shadow-sm">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="flex items-center gap-3.5">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-purple-200">
@@ -536,30 +572,38 @@ function AttendanceContent() {
                 </div>
               )}
               {canAdjustAttendance && (
-                <div className="flex flex-wrap items-center gap-3">
-                  <Button variant="outline" onClick={markAllPresent}>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Mark All Present
-                  </Button>
-                  <Button
-                    onClick={handleSubmitAttendance}
-                    isLoading={isSubmitting || dbSaving}
-                  >
-                  {showSubmitSuccess || saveState === 'saved' ? (
-                    <>
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Button variant="outline" onClick={markAllPresent}>
                       <CheckCircle className="w-4 h-4 mr-2" />
-                      Attendance Saved!
-                    </>
-                  ) : (
-                    <>
-                      <CloudUpload className="w-4 h-4 mr-2" />
-                      Submit Attendance
-                      {pendingCount > 0 && (
-                        <span className="ml-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">{pendingCount} pending</span>
-                      )}
-                    </>
-                  )}
-                </Button>
+                      Mark All Present
+                    </Button>
+                    <Button variant="outline" onClick={markAllAssignments}>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Mark All Assignments (Grade B)
+                    </Button>
+                  </div>
+                  <div>
+                    <Button
+                      onClick={handleSubmitAttendance}
+                      isLoading={isSubmitting || dbSaving}
+                    >
+                    {showSubmitSuccess || saveState === 'saved' ? (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Attendance Saved!
+                      </>
+                    ) : (
+                      <>
+                        <CloudUpload className="w-4 h-4 mr-2" />
+                        Submit Attendance
+                        {pendingCount > 0 && (
+                          <span className="ml-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">{pendingCount} pending</span>
+                        )}
+                      </>
+                    )}
+                  </Button>
+                  </div>
                 </div>
               )}
 
@@ -710,6 +754,12 @@ function AttendanceContent() {
                                 onClick={() => {
                                   const newVal = !(studentAssignments[student.id] ?? attendanceRecord?.assignmentSubmitted ?? false);
                                   setStudentAssignments(prev => ({ ...prev, [student.id]: newVal }));
+                                  // Default grade to B when assignment is marked as submitted without a grade
+                                  let newGrade = studentGrades[student.id] || attendanceRecord?.grade || '';
+                                  if (newVal && !newGrade) {
+                                    newGrade = DEFAULT_ASSIGNMENT_GRADE;
+                                    setStudentGrades(prev => ({ ...prev, [student.id]: newGrade }));
+                                  }
                                   if (status) {
                                     handleMarkAttendance(
                                       student.id,
@@ -717,7 +767,7 @@ function AttendanceContent() {
                                       status,
                                       studentTopics[student.id] || attendanceRecord?.topic,
                                       newVal,
-                                      studentGrades[student.id] || attendanceRecord?.grade
+                                      newGrade
                                     );
                                   }
                                 }}

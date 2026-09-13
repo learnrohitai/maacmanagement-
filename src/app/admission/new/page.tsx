@@ -678,8 +678,10 @@ export default function NewAdmissionPage() {
               <div className="space-y-3 pt-2">
                 <Button
                   type="submit"
+                  variant="success"
+                  size="lg"
                   disabled={isSubmitting || !formData.fullName || !formData.contactNo}
-                  className="w-full py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-base shadow-xl shadow-emerald-600/30 rounded-2xl transition-all"
+                  className="w-full py-4 font-bold rounded-2xl shadow-xl shadow-emerald-600/30"
                 >
                   <CheckCircle2 className="w-5 h-5 mr-2" />
                   {isSubmitting ? 'Registering Admission...' : 'Submit & Create Admission'}

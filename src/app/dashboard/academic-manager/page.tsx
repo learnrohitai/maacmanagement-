@@ -75,7 +75,7 @@ export default function AcademicManagerDashboard() {
   const stats = [
     { title: 'Total Batches', value: batches.length, icon: <BookOpen className="w-6 h-6" />, color: 'purple' as const, trend: `${batches.filter(b => b.status === 'active').length} active` },
     { title: 'Total Faculty', value: teachers.length, icon: <Users className="w-6 h-6" />, color: 'cyan' as const, trend: 'All available' },
-    { title: 'Waiting for Batch', value: waitingStudents.length, icon: <Clock className="w-6 h-6" />, color: 'orange' as const, trend: 'Requires allocation' },
+    { title: 'Waiting for Batch', value: waitingStudents.length, icon: <Clock className="w-6 h-6" />, color: 'orange' as const, trend: 'Requires allocation', trendDirection: 'neutral' as const },
     { title: 'Active Students', value: activeStudents.length, icon: <GraduationCap className="w-6 h-6" />, color: 'green' as const, trend: 'In ongoing batches' },
   ];
 
@@ -267,7 +267,7 @@ export default function AcademicManagerDashboard() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 rounded-2xl p-8 text-white relative overflow-hidden shadow-lg shadow-orange-500/10"
+        className="bg-gradient-to-r from-orange-600 to-amber-600 rounded-2xl p-8 text-white relative overflow-hidden shadow-lg shadow-orange-600/20"
       >
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -translate-y-1/2 translate-x-1/2" />
@@ -285,7 +285,7 @@ export default function AcademicManagerDashboard() {
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-orange-600 text-sm font-bold shadow-lg shadow-orange-900/20 hover:bg-orange-50 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-orange-700 text-sm font-bold shadow-lg shadow-orange-900/20 hover:bg-orange-50 transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               Create New Batch
@@ -963,7 +963,7 @@ export default function AcademicManagerDashboard() {
                           setSelectedStudentForBatch(s.id);
                           setTargetBatchId(batches.find(b => b.course === s.course)?.id || batches[0]?.id || '');
                         }}
-                        className="bg-orange-500 hover:bg-orange-600 text-white text-xs px-3 py-1.5 shadow-sm font-semibold"
+                        className="text-xs px-3 py-1.5 font-semibold"
                       >
                         <PlusCircle className="w-3.5 h-3.5 mr-1" />
                         Assign Batch
@@ -1124,19 +1124,17 @@ export default function AcademicManagerDashboard() {
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-gray-700 font-medium">Module Completion On Schedule</span>
                 <span className="font-bold text-emerald-700">92%</span>
-              </div>
-              <div className="w-full bg-emerald-200 h-2 rounded-full overflow-hidden">
-                <div className="bg-emerald-500 h-full rounded-full" style={{ width: '92%' }} />
-              </div>
+              </div>                  <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                    <div className="bg-emerald-500 h-full rounded-full" style={{ width: '92%' }} />
+                  </div>
             </div>
 
             <div className="p-4 bg-cyan-50 rounded-xl">
               <div className="flex justify-between text-sm mb-1">
                 <span className="text-gray-700 font-medium">Practice & Doubt Class Attendance</span>
                 <span className="font-bold text-cyan-700">78%</span>
-              </div>
-              <div className="w-full bg-cyan-200 h-2 rounded-full overflow-hidden">
-                <div className="bg-cyan-500 h-full rounded-full" style={{ width: '78%' }} />
+              </div>                  <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                    <div className="bg-cyan-500 h-full rounded-full" style={{ width: '78%' }} />
               </div>
             </div>
 
@@ -1145,7 +1143,7 @@ export default function AcademicManagerDashboard() {
                 <span className="text-gray-700 font-medium">Overall Active Batches</span>
                 <span className="font-bold text-purple-700">{batches.filter(b => b.status === 'active').length} / {batches.length}</span>
               </div>
-              <div className="w-full bg-purple-200 h-2 rounded-full overflow-hidden">
+              <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
                 <div className="bg-purple-500 h-full rounded-full" style={{ width: `${batches.length > 0 ? (batches.filter(b => b.status === 'active').length / batches.length) * 100 : 0}%` }} />
               </div>
             </div>
@@ -1530,7 +1528,7 @@ export default function AcademicManagerDashboard() {
               <Button type="button" variant="outline" onClick={() => setSelectedStudentForBatch(null)}>
                 Cancel
               </Button>
-              <Button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white font-semibold">
+              <Button type="submit" variant="warning">
                 Confirm Allocation
               </Button>
             </div>
@@ -1638,7 +1636,8 @@ export default function AcademicManagerDashboard() {
                   </Button>
                   <Button
                     type="submit"
-                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5"
+                    variant="warning"
+                    className="font-bold px-5"
                   >
                     Confirm Batch Transfer
                   </Button>

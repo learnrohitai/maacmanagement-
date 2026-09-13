@@ -119,7 +119,8 @@ export default function InquiriesPage() {
         </div>
         <Button
           onClick={() => setIsAddModalOpen(true)}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
+          variant="success"
+          className="shadow-md shadow-emerald-600/20"
         >
           <UserPlus className="w-4 h-4 mr-2" />
           Add New Lead
@@ -217,7 +218,8 @@ export default function InquiriesPage() {
                   <Button
                     size="sm"
                     onClick={() => updateInquiry(lead.id, { status: 'enrolled' })}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1"
+                    variant="success"
+                    className="text-xs px-2.5 py-1"
                   >
                     <GraduationCap className="w-3.5 h-3.5 mr-1" />
                     Admit
@@ -299,7 +301,7 @@ export default function InquiriesPage() {
                     updateInquiry(selectedLead.id, { status: 'enrolled' });
                     setIsDetailModalOpen(false);
                   }}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  variant="success"
                 >
                   Convert to Admission
                 </Button>
@@ -401,7 +403,7 @@ export default function InquiriesPage() {
             </Button>
             <Button
               type="submit"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              variant="success"
             >
               Create Lead
             </Button>

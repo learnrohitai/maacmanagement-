@@ -114,7 +114,8 @@ export default function StudentsPage() {
         </div>
         <Button
           onClick={() => router.push('/admission/new')}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 font-bold"
+          variant="success"
+          className="shadow-lg shadow-emerald-600/20 font-bold"
         >
           <GraduationCap className="w-5 h-5 mr-2" />
           Create Admission
@@ -325,7 +326,7 @@ export default function StudentsPage() {
         >
           <div className="space-y-5 text-sm max-h-[75vh] overflow-y-auto pr-1">
             <div className="flex items-center gap-4 bg-emerald-50/70 p-4 rounded-2xl border border-emerald-100">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-emerald-500 flex items-center justify-center text-white text-xl font-bold">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-white text-xl font-bold">
                 {selectedStudent.name.charAt(0)}
               </div>
               <div className="flex-1">
@@ -518,7 +519,8 @@ export default function StudentsPage() {
                   </Button>
                   <Button
                     type="submit"
-                    className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-5"
+                    variant="warning"
+                    className="font-bold px-5"
                   >
                     Confirm Batch Transfer
                   </Button>

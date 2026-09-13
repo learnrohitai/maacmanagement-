@@ -25,21 +25,39 @@ export default function Card({ children, className = '', hover = true, gradient 
   );
 }
 
-export function StatCard({ title, value, icon, color, trend }: {
+export function StatCard({ title, value, icon, color, trend, trendDirection }: {
   title: string;
   value: string | number;
   icon: React.ReactNode;
+  /** Semantic key ('purple' | 'cyan' | ...) or a raw Tailwind bg-* class (e.g. 'bg-amber-500'). */
   color: string;
   trend?: string;
+  /** Controls the trend arrow color: 'up' (green) | 'down' (red) | 'neutral' (gray). Defaults to 'up'. */
+  trendDirection?: 'up' | 'down' | 'neutral';
 }) {
   const colorMap: Record<string, string> = {
     purple: 'from-purple-500 to-indigo-600',
     cyan: 'from-cyan-500 to-blue-600',
     green: 'from-emerald-500 to-green-600',
     orange: 'from-orange-500 to-amber-600',
+    amber: 'from-amber-500 to-orange-600',
     red: 'from-red-500 to-rose-600',
     pink: 'from-pink-500 to-fuchsia-600'
   };
+
+  // Accept both semantic keys and raw Tailwind classes used by some pages
+  // (e.g. color: 'bg-emerald-500') so page colors are never silently dropped.
+  const iconBg = colorMap[color]
+    ? `bg-gradient-to-br ${colorMap[color]}`
+    : color;
+
+  const trendStyles: Record<string, string> = {
+    up: 'text-emerald-600',
+    down: 'text-red-600',
+    neutral: 'text-gray-500'
+  };
+  const trendArrows: Record<string, string> = { up: '↑', down: '↓', neutral: '•' };
+  const direction = trendDirection || 'up';
 
   return (
     <Card className="p-6" gradient>
@@ -55,15 +73,15 @@ export function StatCard({ title, value, icon, color, trend }: {
             {value}
           </motion.p>
           {trend && (
-            <p className="text-sm text-emerald-500 mt-1 flex items-center">
-              <span className="mr-1">↑</span>
+            <p className={`text-sm mt-1 flex items-center ${trendStyles[direction]}`}>
+              <span className="mr-1">{trendArrows[direction]}</span>
               {trend}
             </p>
           )}
         </div>
         <motion.div
           whileHover={{ rotate: 10, scale: 1.1 }}
-          className={`w-14 h-14 rounded-xl bg-gradient-to-br ${colorMap[color] || colorMap.purple} flex items-center justify-center text-white shadow-lg`}
+          className={`w-14 h-14 rounded-xl ${iconBg} flex items-center justify-center text-white shadow-lg`}
         >
           {icon}
         </motion.div>

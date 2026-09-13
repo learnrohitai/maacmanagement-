@@ -31,7 +31,7 @@ export default function StudentCurriculumModal({
     >
       <div className="space-y-4">
         <div className="flex items-center gap-3 p-3 bg-emerald-50/70 rounded-xl text-xs">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-emerald-500 flex items-center justify-center text-white font-bold">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-white font-bold">
             {student.name.charAt(0)}
           </div>
           <div>
