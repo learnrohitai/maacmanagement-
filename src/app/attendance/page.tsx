@@ -571,41 +571,7 @@ function AttendanceContent() {
                   Attendance for this batch &amp; date has been submitted and is locked. Only the Academic Manager can re-adjust it.
                 </div>
               )}
-              {canAdjustAttendance && (
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Button variant="outline" onClick={markAllPresent}>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Mark All Present
-                    </Button>
-                    <Button variant="outline" onClick={markAllAssignments}>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Mark All Assignments (Grade B)
-                    </Button>
-                  </div>
-                  <div>
-                    <Button
-                      onClick={handleSubmitAttendance}
-                      isLoading={isSubmitting || dbSaving}
-                    >
-                    {showSubmitSuccess || saveState === 'saved' ? (
-                      <>
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Attendance Saved!
-                      </>
-                    ) : (
-                      <>
-                        <CloudUpload className="w-4 h-4 mr-2" />
-                        Submit Attendance
-                        {pendingCount > 0 && (
-                          <span className="ml-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">{pendingCount} pending</span>
-                        )}
-                      </>
-                    )}
-                  </Button>
-                  </div>
-                </div>
-              )}
+
 
               {/* Save status feedback */}
               <AnimatePresence>
@@ -671,9 +637,59 @@ function AttendanceContent() {
                     {currentUser?.role === 'teacher' && (
                       <>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase">Software Session Topic</th>
-                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase">Assignment</th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase">
+                          <div className="flex flex-col items-center gap-2">
+                            <span>Assignment</span>
+                            {canAdjustAttendance && (
+                              <button
+                                type="button"
+                                onClick={markAllAssignments}
+                                className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-cyan-600 text-white hover:bg-cyan-700 shadow-sm transition-colors normal-case"
+                                title="Mark assignment submitted for all students (default grade B)"
+                              >
+                                Mark All Assignments (B)
+                              </button>
+                            )}
+                          </div>
+                        </th>
                         <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase">Grade</th>
-                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase">Mark Attendance</th>
+                        <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase">
+                          <div className="flex flex-col items-center gap-2">
+                            <span>Mark Attendance</span>
+                            {canAdjustAttendance && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={markAllPresent}
+                                  className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-colors normal-case"
+                                  title="Mark all students present"
+                                >
+                                  Mark All Present
+                                </button>
+                                <Button
+                                  size="sm"
+                                  onClick={handleSubmitAttendance}
+                                  isLoading={isSubmitting || dbSaving}
+                                >
+                                  {showSubmitSuccess || saveState === 'saved' ? (
+                                    <>
+                                      <CheckCircle className="w-4 h-4 mr-1.5" />
+                                      Saved!
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CloudUpload className="w-4 h-4 mr-1.5" />
+                                      Submit Attendance
+                                      {pendingCount > 0 && (
+                                        <span className="ml-1.5 text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full normal-case">{pendingCount} pending</span>
+                                      )}
+                                    </>
+                                  )}
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </th>
                       </>
                     )}
                   </tr>
