@@ -562,53 +562,13 @@ function AttendanceContent() {
                 </Card>
               </motion.div>
             ))}
-          </div>          {/* Quick Actions */}
-          {currentUser?.role === 'teacher' && (
-            <div className="flex flex-col gap-3">
-              {isAttendanceSubmitted && (
-                <div className="flex items-center gap-2 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5">
-                  <Lock className="w-4 h-4 shrink-0" />
-                  Attendance for this batch &amp; date has been submitted and is locked. Only the Academic Manager can re-adjust it.
-                </div>
-              )}
+          </div>
 
-
-              {/* Save status feedback */}
-              <AnimatePresence>
-                {submitError && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center gap-2 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3.5 py-2.5"
-                  >
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
-                    {submitError}
-                  </motion.div>
-                )}
-                {!submitError && saveState === 'pending' && (isSubmitting || dbSaving) && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center gap-2 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-xl px-3.5 py-2.5"
-                  >
-                    <Loader2 className="w-4 h-4 shrink-0 animate-spin" />
-                    Saving attendance to database...
-                  </motion.div>
-                )}
-                {!submitError && saveState === 'error' && dbError && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="flex items-center gap-2 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3.5 py-2.5"
-                  >
-                    <AlertTriangle className="w-4 h-4 shrink-0" />
-                    DB error: {dbError} — marks kept locally, will retry.
-                  </motion.div>
-                )}
-              </AnimatePresence>
+          {/* Submitted lock notice */}
+          {currentUser?.role === 'teacher' && isAttendanceSubmitted && (
+            <div className="flex items-center gap-2 text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5">
+              <Lock className="w-4 h-4 shrink-0" />
+              Attendance for this batch &amp; date has been submitted and is locked. Only the Academic Manager can re-adjust it.
             </div>
           )}
 
@@ -657,36 +617,14 @@ function AttendanceContent() {
                           <div className="flex flex-col items-center gap-2">
                             <span>Mark Attendance</span>
                             {canAdjustAttendance && (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={markAllPresent}
-                                  className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-colors normal-case"
-                                  title="Mark all students present"
-                                >
-                                  Mark All Present
-                                </button>
-                                <Button
-                                  size="sm"
-                                  onClick={handleSubmitAttendance}
-                                  isLoading={isSubmitting || dbSaving}
-                                >
-                                  {showSubmitSuccess || saveState === 'saved' ? (
-                                    <>
-                                      <CheckCircle className="w-4 h-4 mr-1.5" />
-                                      Saved!
-                                    </>
-                                  ) : (
-                                    <>
-                                      <CloudUpload className="w-4 h-4 mr-1.5" />
-                                      Submit Attendance
-                                      {pendingCount > 0 && (
-                                        <span className="ml-1.5 text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded-full normal-case">{pendingCount} pending</span>
-                                      )}
-                                    </>
-                                  )}
-                                </Button>
-                              </>
+                              <button
+                                type="button"
+                                onClick={markAllPresent}
+                                className="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-colors normal-case"
+                                title="Mark all students present"
+                              >
+                                Mark All Present
+                              </button>
                             )}
                           </div>
                         </th>
@@ -861,6 +799,72 @@ function AttendanceContent() {
               </table>
             </div>
           </Card>
+
+          {/* Submit Attendance — bottom of the page */}
+          {currentUser?.role === 'teacher' && (
+            <div className="flex flex-col gap-3">
+              {canAdjustAttendance && (
+                <div className="flex justify-end">
+                  <Button
+                    onClick={handleSubmitAttendance}
+                    isLoading={isSubmitting || dbSaving}
+                  >
+                    {showSubmitSuccess || saveState === 'saved' ? (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Attendance Saved!
+                      </>
+                    ) : (
+                      <>
+                        <CloudUpload className="w-4 h-4 mr-2" />
+                        Submit Attendance
+                        {pendingCount > 0 && (
+                          <span className="ml-2 text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">{pendingCount} pending</span>
+                        )}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              {/* Save status feedback */}
+              <AnimatePresence>
+                {submitError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-2 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3.5 py-2.5"
+                  >
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    {submitError}
+                  </motion.div>
+                )}
+                {!submitError && saveState === 'pending' && (isSubmitting || dbSaving) && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-2 text-xs font-medium text-purple-700 bg-purple-50 border border-purple-200 rounded-xl px-3.5 py-2.5"
+                  >
+                    <Loader2 className="w-4 h-4 shrink-0 animate-spin" />
+                    Saving attendance to database...
+                  </motion.div>
+                )}
+                {!submitError && saveState === 'error' && dbError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-2 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-xl px-3.5 py-2.5"
+                  >
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    DB error: {dbError} — marks kept locally, will retry.
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
         </>
       )}
 
