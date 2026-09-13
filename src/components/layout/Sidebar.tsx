@@ -1,6 +1,5 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useStore } from '@/store/useStore';
@@ -59,25 +58,17 @@ export default function Sidebar() {
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="p-6 border-b border-white/10">
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="flex items-center gap-3"
-        >
+        <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
             <span className="text-white font-bold text-xl">M</span>
           </div>
           {!isCollapsed && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
+            <div>
               <h1 className="text-xl font-bold text-white">MAAC</h1>
               <p className="text-xs text-white/60">Institute Portal</p>
-            </motion.div>
+            </div>
           )}
-        </motion.div>
+        </div>
       </div>
 
       {/* Navigation */}
@@ -86,10 +77,8 @@ export default function Sidebar() {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
             <Link key={item.href} href={item.href}>
-              <motion.div
-                whileHover={{ x: 5 }}
-                whileTap={{ scale: 0.98 }}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${
+              <div
+                className={`relative flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-150 ${
                   isActive
                     ? 'bg-white/20 text-white shadow-lg shadow-purple-500/20'
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
@@ -97,21 +86,12 @@ export default function Sidebar() {
               >
                 <span className={isActive ? 'text-cyan-400' : ''}>{item.icon}</span>
                 {!isCollapsed && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="font-medium"
-                  >
-                    {item.label}
-                  </motion.span>
+                  <span className="font-medium">{item.label}</span>
                 )}
                 {isActive && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute left-0 w-1 h-8 bg-gradient-to-b from-purple-500 to-cyan-500 rounded-r-full"
-                  />
+                  <span className="absolute left-0 w-1 h-8 bg-gradient-to-b from-purple-500 to-cyan-500 rounded-r-full" />
                 )}
-              </motion.div>
+              </div>
             </Link>
           );
         })}
@@ -129,14 +109,13 @@ export default function Sidebar() {
               <p className="text-xs text-white/60 capitalize">{currentUser?.role?.replace('-', ' ')}</p>
             </div>
           )}
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+          <button
             onClick={logout}
             className="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+            aria-label="Log out"
           >
             <LogOut className="w-5 h-5" />
-          </motion.button>
+          </button>
         </div>
       </div>
     </div>
@@ -148,53 +127,45 @@ export default function Sidebar() {
       <button
         onClick={() => setIsMobileOpen(true)}
         className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-purple-600 text-white rounded-xl shadow-lg"
+        aria-label="Open menu"
       >
         <Menu className="w-6 h-6" />
       </button>
 
       {/* Mobile Sidebar */}
-      <AnimatePresence>
-        {isMobileOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+      {isMobileOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+            onClick={() => setIsMobileOpen(false)}
+          />
+          <aside className="fixed left-0 top-0 h-full w-72 bg-gradient-to-b from-purple-900 via-indigo-900 to-purple-950 z-50 lg:hidden">
+            <button
               onClick={() => setIsMobileOpen(false)}
-            />
-            <motion.aside
-              initial={{ x: -300 }}
-              animate={{ x: 0 }}
-              exit={{ x: -300 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="fixed left-0 top-0 h-full w-72 bg-gradient-to-b from-purple-900 via-indigo-900 to-purple-950 z-50 lg:hidden"
+              className="absolute top-4 right-4 p-2 text-white/70 hover:text-white"
+              aria-label="Close menu"
             >
-              <button
-                onClick={() => setIsMobileOpen(false)}
-                className="absolute top-4 right-4 p-2 text-white/70 hover:text-white"
-              >
-                <X className="w-6 h-6" />
-              </button>
-              {renderSidebarContent()}
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
+              <X className="w-6 h-6" />
+            </button>
+            {renderSidebarContent()}
+          </aside>
+        </>
+      )}
 
       {/* Desktop Sidebar */}
-      <motion.aside
-        animate={{ width: isCollapsed ? 80 : 280 }}
+      <aside
         className="hidden lg:block fixed left-0 top-0 h-full bg-gradient-to-b from-purple-900 via-indigo-900 to-purple-950 z-30"
+        style={{ width: isCollapsed ? 80 : 280, transition: 'width 0.2s ease' }}
       >
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:text-purple-600 transition-colors z-10"
+          aria-label="Toggle sidebar"
         >
           <ChevronLeft className={`w-4 h-4 transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
         </button>
         {renderSidebarContent()}
-      </motion.aside>
+      </aside>
     </>
   );
 }

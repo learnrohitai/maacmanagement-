@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import Card, { StatCard } from '@/components/ui/Card';
@@ -10,12 +10,14 @@ import Modal from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Table';
 import {
   GraduationCap,
-  Calendar,
   Sparkles,
   BookOpen,
   Search,
   Eye,
-  FileCheck2
+  FileCheck2,
+  FileBarChart,
+  Cake,
+  Users
 } from 'lucide-react';
 import {
   BarChart,
@@ -24,18 +26,110 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend
 } from 'recharts';
 import { StudentStatus, User as UserType } from '@/types';
 import { COURSE_DATABASE } from '@/lib/softwareData';
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+const REFERRAL_COLORS: Record<string, string> = {
+  'Website': '#06b6d4',
+  'Walk-in': '#10b981',
+  'Social Media': '#8b5cf6',
+  'Referral': '#f59e0b',
+  'Phone Call': '#ef4444',
+};
+
+// Parse "YYYY-MM-DD" (or full ISO) into local date parts — avoids
+// timezone drift that new Date('YYYY-MM-DD') can cause.
+const parseDateParts = (value?: string): { year: number; month: number; day: number } | null => {
+  if (!value) return null;
+  const m = value.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  return { year: parseInt(m[1]), month: parseInt(m[2]), day: parseInt(m[3]) };
+};
 
 export default function CounselorDashboard() {
   const router = useRouter();
   const { students } = useStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStudentDetail, setSelectedStudentDetail] = useState<UserType | null>(null);
+  const [showReport, setShowReport] = useState(false);
+
+  // Selected report month: defaults to the current month ("this month")
+  const now = new Date();
+  const [reportYear, setReportYear] = useState(now.getFullYear());
+  const [reportMonth, setReportMonth] = useState(now.getMonth()); // 0-11
 
   const totalAdmissionsCount = students.length;
+
+  // ===== ===== MONTHLY ADMISSIONS REPORT (computed once) ===== =====
+  const report = useMemo(() => {
+    const monthAdmissions: UserType[] = [];
+    const monthBirthdays: Array<{ student: UserType; day: number; age: number | null }> = [];
+
+    students.forEach(s => {
+      // --- Admissions this month (by admissionDate, falling back to joinDate) ---
+      const adm = parseDateParts(s.admissionDate || s.joinDate);
+      if (adm && adm.year === reportYear && adm.month === reportMonth + 1) {
+        monthAdmissions.push(s);
+      }
+
+      // --- Birthdays this month ---
+      const dob = parseDateParts(s.dob);
+      if (dob && dob.month === reportMonth + 1) {
+        let age: number | null = null;
+        if (s.admissionDate) {
+          const admParts = parseDateParts(s.admissionDate);
+          if (admParts) {
+            age = admParts.year - dob.year;
+          }
+        }
+        monthBirthdays.push({ student: s, day: dob.day, age });
+      }
+    });
+
+    monthBirthdays.sort((a, b) => a.day - b.day);
+
+    // --- Referral-source breakdown for this month's admissions ---
+    const sourceCounts: Record<string, number> = {};
+    monthAdmissions.forEach(s => {
+      const src = s.referralSource || 'Not Recorded';
+      sourceCounts[src] = (sourceCounts[src] || 0) + 1;
+    });
+    const sourceData = Object.entries(sourceCounts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // --- Course breakdown for this month's admissions ---
+    const courseCounts: Record<string, number> = {};
+    monthAdmissions.forEach(s => {
+      const c = s.course || 'Unassigned';
+      courseCounts[c] = (courseCounts[c] || 0) + 1;
+    });
+    const courseData = Object.entries(courseCounts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // --- Documents / fee summary for this month's admissions ---
+    const docsPending = monthAdmissions.filter(s => !s.documentsSubmitted || s.documentsSubmitted.length === 0).length;
+
+    return {
+      admissions: monthAdmissions,
+      birthdays: monthBirthdays,
+      sourceData,
+      courseData,
+      docsPending,
+    };
+  }, [students, reportYear, reportMonth]);
 
   const stats = [
     {
@@ -61,7 +155,7 @@ export default function CounselorDashboard() {
     }
   ];
 
-  // Course Admissions Breakdown Data
+  // Course Admissions Breakdown Data (all-time, kept for dashboard chart)
   const courseCountMap: Record<string, number> = {};
   students.forEach(s => {
     const course = s.course || 'Animation';
@@ -120,13 +214,22 @@ export default function CounselorDashboard() {
               Create new student admissions, record candidate details, guardian contacts, and submitted documents. Admissions are submitted and automatically forwarded to Academic Managers for batch scheduling.
             </p>
           </div>
-          <Button
-            onClick={() => router.push('/admission/new')}
-            className="bg-white text-emerald-800 hover:bg-emerald-50 shadow-2xl font-bold text-base px-6 py-3.5 rounded-xl border border-white shrink-0"
-          >
-            <GraduationCap className="w-5 h-5 mr-2 text-emerald-600" />
-            Create Admission
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3 shrink-0">
+            <Button
+              onClick={() => setShowReport(true)}
+              className="bg-white text-teal-800 hover:bg-teal-50 shadow-2xl font-bold text-base px-6 py-3.5 rounded-xl border border-white"
+            >
+              <FileBarChart className="w-5 h-5 mr-2 text-teal-600" />
+              Monthly Report
+            </Button>
+            <Button
+              onClick={() => router.push('/admission/new')}
+              className="bg-emerald-700 text-white hover:bg-emerald-800 shadow-2xl font-bold text-base px-6 py-3.5 rounded-xl border border-emerald-500/40"
+            >
+              <GraduationCap className="w-5 h-5 mr-2" />
+              Create Admission
+            </Button>
+          </div>
         </div>
       </motion.div>
 
@@ -137,13 +240,241 @@ export default function CounselorDashboard() {
         ))}
       </div>
 
+      {/* ===== MONTHLY ADMISSIONS REPORT (inline section) ===== */}
+      <Card className="p-6 border-l-4 border-l-teal-500">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
+          <div>
+            <div className="flex items-center gap-2">
+              <FileBarChart className="w-5 h-5 text-teal-600" />
+              <h3 className="text-lg font-bold text-gray-900">Monthly Admissions Report</h3>
+            </div>
+            <p className="text-xs text-gray-500 mt-0.5">
+              This month&apos;s admissions, birthdays, and where the new students came from.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={reportMonth}
+              onChange={(e) => setReportMonth(parseInt(e.target.value))}
+              className="px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
+            >
+              {MONTH_NAMES.map((m, i) => (
+                <option key={m} value={i}>{m}</option>
+              ))}
+            </select>
+            <select
+              value={reportYear}
+              onChange={(e) => setReportYear(parseInt(e.target.value))}
+              className="px-3 py-2 rounded-xl text-xs font-semibold border border-gray-200 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
+            >
+              {Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i).map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Report summary tiles */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <div className="p-3.5 rounded-2xl bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200/70">
+            <p className="text-[10px] text-gray-500 font-semibold uppercase">Admissions in {MONTH_NAMES[reportMonth]} {reportYear}</p>
+            <p className="text-2xl font-extrabold text-teal-700 leading-tight">{report.admissions.length}</p>
+            <p className="text-[10px] text-gray-500">of {students.length} total</p>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200">
+            <p className="text-[10px] text-gray-500 font-semibold uppercase">Birthdays This Month</p>
+            <p className="text-2xl font-extrabold text-pink-600 leading-tight">{report.birthdays.length}</p>
+            <p className="text-[10px] text-gray-500">students to wish</p>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200">
+            <p className="text-[10px] text-gray-500 font-semibold uppercase">Top Source</p>
+            <p className="text-lg font-extrabold text-purple-700 leading-tight truncate">
+              {report.sourceData[0]?.name || '—'}
+            </p>
+            <p className="text-[10px] text-gray-500">{report.sourceData[0] ? `${report.sourceData[0].value} admissions` : 'no data yet'}</p>
+          </div>
+          <div className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200">
+            <p className="text-[10px] text-gray-500 font-semibold uppercase">Docs Pending</p>
+            <p className="text-2xl font-extrabold text-amber-600 leading-tight">{report.docsPending}</p>
+            <p className="text-[10px] text-gray-500">of this month&apos;s admissions</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Referral source pie chart */}
+          <div>
+            <p className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">
+              Admissions by Source — {MONTH_NAMES[reportMonth]} {reportYear}
+            </p>
+            {report.sourceData.length === 0 ? (
+              <div className="p-6 text-center text-xs text-gray-500 bg-gray-50 rounded-xl">
+                No admissions recorded for this month.
+              </div>
+            ) : (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={report.sourceData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={45}
+                      outerRadius={80}
+                      paddingAngle={3}
+                      label={({ name, value }) => `${name}: ${value}`}
+                    >
+                      {report.sourceData.map((entry) => (
+                        <Cell key={entry.name} fill={REFERRAL_COLORS[entry.name] || '#94a3b8'} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: 'none',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                        fontSize: '12px'
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '11px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+
+          {/* Course-wise bar chart for the month */}
+          <div>
+            <p className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">
+              Admissions by Course — {MONTH_NAMES[reportMonth]} {reportYear}
+            </p>
+            {report.courseData.length === 0 ? (
+              <div className="p-6 text-center text-xs text-gray-500 bg-gray-50 rounded-xl">
+                No admissions recorded for this month.
+              </div>
+            ) : (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={report.courseData} margin={{ top: 8, right: 12, left: -18, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="name" stroke="#9ca3af" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={50} />
+                    <YAxis stroke="#9ca3af" allowDecimals={false} tick={{ fontSize: 10 }} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'white',
+                        border: 'none',
+                        borderRadius: '12px',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                        fontSize: '12px'
+                      }}
+                    />
+                    <Bar dataKey="value" name="Admissions" fill="#14b8a6" radius={[8, 8, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Birthdays this month */}
+        <div className="mb-6">
+          <p className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+            <Cake className="w-3.5 h-3.5 text-pink-500" />
+            Birthdays in {MONTH_NAMES[reportMonth]} ({report.birthdays.length})
+          </p>
+          {report.birthdays.length === 0 ? (
+            <div className="p-4 text-center text-xs text-gray-500 bg-gray-50 rounded-xl">
+              No student birthdays recorded for this month.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+              {report.birthdays.map(({ student, day, age }) => (
+                <div
+                  key={student.id}
+                  className="p-3 rounded-xl border border-pink-100 bg-pink-50/50 flex items-center gap-2.5 cursor-pointer hover:border-pink-300 hover:shadow-sm transition-all"
+                  onClick={() => setSelectedStudentDetail(student)}
+                >
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                    {student.name.charAt(0)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-gray-900 truncate">{student.name}</p>
+                    <p className="text-[10px] text-gray-500">
+                      {day} {MONTH_NAMES[reportMonth].slice(0, 3)}
+                      {age !== null && ` • turns ${age + 1}`}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* This month's admissions list */}
+        <div>
+          <p className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-teal-600" />
+            Admissions Done in {MONTH_NAMES[reportMonth]} {reportYear} ({report.admissions.length})
+          </p>
+          {report.admissions.length === 0 ? (
+            <div className="p-4 text-center text-xs text-gray-500 bg-gray-50 rounded-xl">
+              No admissions recorded in this month.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-gray-50 text-gray-600 border-b border-gray-100 text-xs">
+                  <tr>
+                    <th className="py-2.5 px-3 font-semibold">Student</th>
+                    <th className="py-2.5 px-3 font-semibold">Course</th>
+                    <th className="py-2.5 px-3 font-semibold">Admission Date</th>
+                    <th className="py-2.5 px-3 font-semibold">Source</th>
+                    <th className="py-2.5 px-3 font-semibold text-right">Profile</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {report.admissions.map((s) => (
+                    <tr key={s.id} className="hover:bg-gray-50/60">
+                      <td className="py-2.5 px-3">
+                        <div className="text-xs font-bold text-gray-900">{s.name}</div>
+                        <div className="text-[10px] font-mono text-emerald-700">{s.studentId || 'MAAC-STU'}</div>
+                      </td>
+                      <td className="py-2.5 px-3 text-xs text-gray-700">{s.course || '—'}</td>
+                      <td className="py-2.5 px-3 text-xs text-gray-600">{s.admissionDate || s.joinDate}</td>
+                      <td className="py-2.5 px-3">
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 border border-teal-200">
+                          {s.referralSource || 'Not Recorded'}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setSelectedStudentDetail(s)}
+                          className="text-xs px-2.5 py-1 text-gray-600 hover:text-teal-700"
+                        >
+                          <Eye className="w-3.5 h-3.5 mr-1" />
+                          View
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </Card>
+
       {/* Analytics Charts */}
       <div className="grid grid-cols-1 gap-6">
         <Card className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Admissions by Course Program</h3>
-              <p className="text-xs text-gray-500">Distribution of enrolled candidates across creative programs</p>
+              <p className="text-xs text-gray-500">All-time distribution across creative programs</p>
             </div>
             <Badge variant="purple">Master Records</Badge>
           </div>
@@ -357,6 +688,97 @@ export default function CounselorDashboard() {
 
             <div className="flex justify-end pt-3 border-t">
               <Button variant="outline" onClick={() => setSelectedStudentDetail(null)}>Close</Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Full-screen Monthly Report Modal (opened from banner button) */}
+      {showReport && (
+        <Modal
+          isOpen={showReport}
+          onClose={() => setShowReport(false)}
+          title={`Monthly Admissions Report — ${MONTH_NAMES[reportMonth]} ${reportYear}`}
+          size="2xl"
+        >
+          <div className="space-y-4 text-sm max-h-[70vh] overflow-y-auto pr-1">
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 rounded-xl bg-teal-50 border border-teal-200 text-center">
+                <p className="text-[10px] text-gray-500 font-semibold uppercase">Admissions</p>
+                <p className="text-2xl font-extrabold text-teal-700">{report.admissions.length}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-pink-50 border border-pink-200 text-center">
+                <p className="text-[10px] text-gray-500 font-semibold uppercase">Birthdays</p>
+                <p className="text-2xl font-extrabold text-pink-600">{report.birthdays.length}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-purple-50 border border-purple-200 text-center">
+                <p className="text-[10px] text-gray-500 font-semibold uppercase">Top Source</p>
+                <p className="text-lg font-extrabold text-purple-700 truncate">{report.sourceData[0]?.name || '—'}</p>
+              </div>
+            </div>
+
+            {/* Source breakdown list */}
+            <div>
+              <p className="text-xs font-bold text-gray-600 uppercase mb-2">Admissions by Source</p>
+              {report.sourceData.length === 0 ? (
+                <p className="text-xs text-gray-400">No data for this month.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {report.sourceData.map(({ name, value }) => {
+                    const pct = report.admissions.length > 0 ? Math.round((value / report.admissions.length) * 100) : 0;
+                    return (
+                      <div key={name} className="flex items-center gap-2">
+                        <span className="text-xs font-semibold text-gray-700 w-28 shrink-0">{name}</span>
+                        <div className="flex-1 bg-gray-100 h-2 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-teal-500"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-bold text-gray-700 w-14 text-right">{value} ({pct}%)</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Birthday list */}
+            <div>
+              <p className="text-xs font-bold text-gray-600 uppercase mb-2">Birthdays This Month</p>
+              {report.birthdays.length === 0 ? (
+                <p className="text-xs text-gray-400">No birthdays this month.</p>
+              ) : (
+                <div className="space-y-1">
+                  {report.birthdays.map(({ student, day, age }) => (
+                    <div key={student.id} className="flex items-center justify-between text-xs bg-pink-50/60 rounded-lg px-3 py-2">
+                      <span className="font-semibold text-gray-800">{student.name}</span>
+                      <span className="text-gray-600">{day} {MONTH_NAMES[reportMonth].slice(0, 3)}{age !== null && ` • turns ${age + 1}`}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Admissions list */}
+            <div>
+              <p className="text-xs font-bold text-gray-600 uppercase mb-2">Admissions Done This Month</p>
+              {report.admissions.length === 0 ? (
+                <p className="text-xs text-gray-400">No admissions this month.</p>
+              ) : (
+                <div className="space-y-1">
+                  {report.admissions.map((s) => (
+                    <div key={s.id} className="flex items-center justify-between text-xs bg-gray-50 rounded-lg px-3 py-2">
+                      <span className="font-semibold text-gray-800">{s.name} <span className="text-gray-400">• {s.course || '—'}</span></span>
+                      <span className="text-teal-700 font-bold">{s.referralSource || 'Not Recorded'}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-3 border-t">
+              <Button variant="outline" onClick={() => setShowReport(false)}>Close</Button>
             </div>
           </div>
         </Modal>
