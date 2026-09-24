@@ -286,16 +286,16 @@ export default function AcademicManagerDashboard() {
           </div>
           <h1 className="text-3xl font-bold mb-2">Academic Operations & Batch Allocations 📊</h1>
           <p className="text-white/90 max-w-2xl text-sm md:text-base mb-4">
-            Allocate newly admitted students to batches, perform batch transfers upon student request, and manage faculty scheduling.
+            Allocate newly admitted students to batches, perform batch transfers upon student request, and manage faculty scheduling. Batch & lab time-slot creation is handled by the Admin.
           </p>
-          <Link href="/batches?create=1">
+          <Link href="/batches">
             <motion.button
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-orange-700 text-sm font-bold shadow-lg shadow-orange-900/20 hover:bg-orange-50 transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              Create New Batch
+              View Batch Schedule
             </motion.button>
           </Link>
         </div>
@@ -376,10 +376,10 @@ export default function AcademicManagerDashboard() {
             {!activeTrackerBatch || !trackerBatchSoftware ? (
               <div className="p-6 text-center text-xs text-gray-500 bg-gray-50 rounded-xl space-y-3">
                 <p>No batch found to track its software sessions.</p>
-                <Link href="/batches?create=1">
+                <Link href="/batches">
                   <Button>
                     <Plus className="w-4 h-4 mr-1.5" />
-                    Create New Batch
+                    View Batch Schedule
                   </Button>
                 </Link>
               </div>

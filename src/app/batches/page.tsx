@@ -59,8 +59,9 @@ export default function BatchesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Deep link: /batches?create=1 auto-opens the Create Batch wizard (Step 1)
+  // Admin only — lab time-slot control is restricted to the admin role.
   useEffect(() => {
-    if (searchParams.get('create') === '1' && currentUser && currentUser.role !== 'counselor') {
+    if (searchParams.get('create') === '1' && currentUser && currentUser.role === 'admin') {
       resetForm();
       setIsModalOpen(true);
       router.replace('/batches');
@@ -129,6 +130,10 @@ export default function BatchesPage() {
       </div>
     );
   }
+
+  // ===== Lab time-slot control is ADMIN ONLY =====
+  // Teachers and academic managers have view-only access to the schedule.
+  const isAdmin = currentUser?.role === 'admin';
 
   const teachers = users.filter(u => u.role === 'teacher');
 
@@ -295,6 +300,7 @@ export default function BatchesPage() {
   };
 
   const openEditModal = (batch: Batch) => {
+    if (currentUser?.role !== 'admin') return; // lab slot control is admin-only
     setEditingBatch(batch);
     setFormData({
       batchIdCode: batch.batchIdCode || `MAAC-BAT-${batch.id}`,
@@ -351,7 +357,7 @@ export default function BatchesPage() {
           <h1 className="text-3xl font-bold text-gray-900">Batch Management & Scheduling</h1>
           <p className="text-gray-500 mt-1">Configure class batches, transfer students, assign lab rooms, and schedule practice classes</p>
         </div>
-        {(currentUser?.role === 'admin' || currentUser?.role === 'academic-manager') ? (
+        {isAdmin ? (
           <Button onClick={() => { resetForm(); setIsModalOpen(true); }}>
             <Plus className="w-5 h-5 mr-2" />
             Create New Batch
@@ -359,7 +365,7 @@ export default function BatchesPage() {
         ) : (
           <span className="inline-flex items-center gap-2 text-xs font-semibold text-gray-500 bg-gray-100 px-4 py-2.5 rounded-xl">
             <ShieldCheck className="w-4 h-4" />
-            Batches are created by the Academic Manager
+            View only — lab time slots are managed by the Admin
           </span>
         )}
       </motion.div>
@@ -520,17 +526,21 @@ export default function BatchesPage() {
                     View Session Breakdown ({getSoftwareTotalSessions(batch.course)} Topics)
                   </Button>
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" className="flex-1 text-xs" onClick={() => openEditModal(batch)}>
-                      <Edit2 className="w-3.5 h-3.5 mr-1" />
-                      Edit
-                    </Button>
+                    {isAdmin && (
+                      <Button variant="ghost" size="sm" className="flex-1 text-xs" onClick={() => openEditModal(batch)}>
+                        <Edit2 className="w-3.5 h-3.5 mr-1" />
+                        Edit
+                      </Button>
+                    )}
                     <Button variant="ghost" size="sm" className="flex-1 text-xs" onClick={() => setViewingBatch(batch)}>
                       <Eye className="w-3.5 h-3.5 mr-1" />
                       Students ({batch.enrolledStudents})
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => deleteBatch(batch.id)}>
-                      <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                    </Button>
+                    {isAdmin && (
+                      <Button variant="ghost" size="sm" onClick={() => deleteBatch(batch.id)}>
+                        <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </Card>
