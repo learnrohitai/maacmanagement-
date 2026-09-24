@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import Card from '@/components/ui/Card';
@@ -25,6 +25,7 @@ import {
   RefreshCw,
   ArrowRight,
   CheckCircle2,
+  CheckCircle,
   ShieldAlert,
   ShieldCheck,
   ClipboardCheck,
@@ -40,6 +41,7 @@ import {
   getSoftwareTotalSessions
 } from '@/lib/softwareData';
 import { Batch, User as UserType } from '@/types';
+import { LABS, checkLabAvailability, findAvailableLabs, timeToMinutes } from '@/lib/labSlots';
 
 // ID generators kept outside the component so render stays pure
 const generateBatchId = () => Date.now().toString();
@@ -101,6 +103,18 @@ export default function BatchesPage() {
     classesRemaining: 16,
     isPracticeDoubtClass: false
   });
+
+  // ===== Lab slot availability (5 labs × 2-hour slots) =====
+  // Computed live from the form's start time + days against all existing batches.
+  // If no lab is free, batch creation is blocked with a clear message.
+  const slotCheck = useMemo(() => {
+    const others = editingBatch ? batches.filter(b => b.id !== editingBatch.id) : batches;
+    if (formData.days.length === 0) return null;
+    return checkLabAvailability(
+      { startTime: formData.startTime, days: formData.days, durationMinutes: 120 },
+      others
+    );
+  }, [formData.startTime, formData.days, batches, editingBatch]);
 
   if (currentUser?.role === 'counselor') {
     return (
@@ -183,9 +197,26 @@ export default function BatchesPage() {
       resetForm();
       return;
     }
+
+    // ===== Lab availability gate: creation is impossible without a free lab =====
+    if (formData.days.length === 0) return;
+    const check = checkLabAvailability(
+      { startTime: formData.startTime, days: formData.days, durationMinutes: 120 },
+      batches
+    );
+    if (!check.isAvailable) {
+      alert('No time slot available — all 5 labs are occupied for this time on the selected days. Try a different time or day combination.');
+      return;
+    }
+    // Auto-assign the first free lab when the user hasn't picked one
+    const room = formData.room.trim() && check.availableLabs.some(l => l.name === formData.room.trim())
+      ? formData.room.trim()
+      : check.availableLabs[0].name;
+
     const newBatch: Batch = {
       id: generateBatchId(),
       ...formData,
+      room,
       teacherName: teacher?.name || '',
       enrolledStudents: 0,
       studentIds: [],
@@ -825,10 +856,15 @@ export default function BatchesPage() {
                 required
               />
               <Input
-                label="Start Time *"
+                label="Start Time * (fixed 2-hour slot)"
                 type="time"
                 value={formData.startTime}
-                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                onChange={(e) => {
+                  const start = e.target.value;
+                  const endMin = timeToMinutes(start) + 120;
+                  const end = `${String(Math.floor(endMin / 60)).padStart(2, '0')}:${String(endMin % 60).padStart(2, '0')}`;
+                  setFormData({ ...formData, startTime: start, endTime: end });
+                }}
                 required
               />
               <Input
@@ -839,6 +875,53 @@ export default function BatchesPage() {
                 required
               />
             </div>
+
+            {/* Live lab availability preview (create mode) */}
+            {!editingBatch && slotCheck && (
+              <div
+                className={`p-3.5 rounded-xl border space-y-2 ${
+                  slotCheck.isAvailable
+                    ? 'border-emerald-200 bg-emerald-50/60'
+                    : 'border-red-300 bg-red-50'
+                }`}
+              >
+                <p className={`text-xs font-bold flex items-center gap-1.5 ${slotCheck.isAvailable ? 'text-emerald-800' : 'text-red-800'}`}>
+                  {slotCheck.isAvailable ? (
+                    <><CheckCircle className="w-4 h-4" /> Time slot available — pick a free lab:</>
+                  ) : (
+                    <><ShieldAlert className="w-4 h-4" /> No time slot available</>
+                  )}
+                </p>
+                {slotCheck.isAvailable ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {LABS.map((lab) => {
+                      const free = slotCheck.availableLabs.some((l) => l.id === lab.id);
+                      return (
+                        <button
+                          key={lab.id}
+                          type="button"
+                          disabled={!free}
+                          onClick={() => setFormData({ ...formData, room: lab.name })}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors ${
+                            formData.room === lab.name
+                              ? 'bg-emerald-600 text-white border-emerald-600'
+                              : free
+                                ? 'bg-white text-gray-700 border-gray-200 hover:border-emerald-400 hover:text-emerald-700'
+                                : 'bg-gray-100 text-gray-400 border-gray-100 cursor-not-allowed line-through'
+                          }`}
+                        >
+                          {lab.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-red-700">
+                    All 5 labs are occupied for this time on the selected days. Change the start time or days, then try again.
+                  </p>
+                )}
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Schedule Days *</label>
@@ -1009,10 +1092,15 @@ export default function BatchesPage() {
                 required
               />
               <Input
-                label="Start Time *"
+                label="Start Time * (fixed 2-hour slot)"
                 type="time"
                 value={formData.startTime}
-                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                onChange={(e) => {
+                  const start = e.target.value;
+                  const endMin = timeToMinutes(start) + 120;
+                  const end = `${String(Math.floor(endMin / 60)).padStart(2, '0')}:${String(endMin % 60).padStart(2, '0')}`;
+                  setFormData({ ...formData, startTime: start, endTime: end });
+                }}
                 required
               />
               <Input
@@ -1023,6 +1111,53 @@ export default function BatchesPage() {
                 required
               />
             </div>
+
+            {/* Live lab availability preview (create mode) */}
+            {!editingBatch && slotCheck && (
+              <div
+                className={`p-3.5 rounded-xl border space-y-2 ${
+                  slotCheck.isAvailable
+                    ? 'border-emerald-200 bg-emerald-50/60'
+                    : 'border-red-300 bg-red-50'
+                }`}
+              >
+                <p className={`text-xs font-bold flex items-center gap-1.5 ${slotCheck.isAvailable ? 'text-emerald-800' : 'text-red-800'}`}>
+                  {slotCheck.isAvailable ? (
+                    <><CheckCircle className="w-4 h-4" /> Time slot available — pick a free lab:</>
+                  ) : (
+                    <><ShieldAlert className="w-4 h-4" /> No time slot available</>
+                  )}
+                </p>
+                {slotCheck.isAvailable ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {LABS.map((lab) => {
+                      const free = slotCheck.availableLabs.some((l) => l.id === lab.id);
+                      return (
+                        <button
+                          key={lab.id}
+                          type="button"
+                          disabled={!free}
+                          onClick={() => setFormData({ ...formData, room: lab.name })}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors ${
+                            formData.room === lab.name
+                              ? 'bg-emerald-600 text-white border-emerald-600'
+                              : free
+                                ? 'bg-white text-gray-700 border-gray-200 hover:border-emerald-400 hover:text-emerald-700'
+                                : 'bg-gray-100 text-gray-400 border-gray-100 cursor-not-allowed line-through'
+                          }`}
+                        >
+                          {lab.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-red-700">
+                    All 5 labs are occupied for this time on the selected days. Change the start time or days, then try again.
+                  </p>
+                )}
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Schedule Days *</label>

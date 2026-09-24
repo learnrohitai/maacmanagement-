@@ -76,9 +76,17 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
     waitingForModule: 'Module 1: Fundamentals & Foundation'
   }));
 
-  // Optional WhatsApp OTP verification for the student and parent numbers.
-  // Verification never blocks the admission — it only records confidence.
+  // Compulsory WhatsApp OTP verification for the student contact number.
+  // The admission cannot proceed past Step 1 until the student's number is
+  // verified. Parent verification remains optional.
   const [verifiedNumbers, setVerifiedNumbers] = useState({ contact: false, parent: false });
+  const [verifiedPhones, setVerifiedPhones] = useState({ contact: '', parent: '' });
+  const [stepError, setStepError] = useState('');
+  const contactDigits = formData.contactNo.replace(/\D/g, '');
+  const isStudentVerified =
+    verifiedNumbers.contact &&
+    verifiedPhones.contact === contactDigits &&
+    contactDigits.length >= 10;
 
   const handleDocToggle = (docId: string) => {
     setFormData(prev => {
@@ -98,6 +106,14 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
 
   const handleNext = () => {
     if (currentStep === 1 && validateStep1()) {
+      // ===== COMPULSORY: student's WhatsApp OTP must be verified =====
+      if (!isStudentVerified) {
+        setStepError(
+          'WhatsApp verification required — the student contact number must be verified via OTP before continuing.'
+        );
+        return;
+      }
+      setStepError('');
       setCurrentStep(2);
     } else if (currentStep === 2) {
       setCurrentStep(3);
@@ -287,9 +303,18 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
                           phone={formData.contactNo}
                           role="student"
                           studentId={formData.studentId}
-                          verified={verifiedNumbers.contact}
-                          onVerified={() => setVerifiedNumbers((v) => ({ ...v, contact: true }))}
+                          verified={isStudentVerified}
+                          onVerified={() => {
+                            setVerifiedNumbers((v) => ({ ...v, contact: true }));
+                            setVerifiedPhones((p) => ({ ...p, contact: contactDigits }));
+                            setStepError('');
+                          }}
                         />
+                        {!isStudentVerified && (
+                          <p className="text-[11px] font-semibold text-amber-700 mt-1">
+                            OTP verification is compulsory before admission can continue.
+                          </p>
+                        )}
                       </div>
                     </div>
                     <Input
@@ -555,6 +580,11 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
               </div>
 
               <div className="flex items-center gap-3">
+                {stepError && currentStep === 1 && (
+                  <p className="text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mr-1 max-w-xs">
+                    {stepError}
+                  </p>
+                )}
                 {currentStep < 3 ? (
                   <Button
                     type="button"
