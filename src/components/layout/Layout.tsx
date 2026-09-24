@@ -7,16 +7,18 @@ import Sidebar from './Sidebar';
 import Header from './Header';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, loadBatches } = useStore();
+  const { isAuthenticated, loadBatches, loadStudents, loadEmis } = useStore();
   const router = useRouter();
 
-  // Hydrate batches from MongoDB as soon as the user is authenticated so
-  // batches created on Vercel persist across reloads and sessions.
+  // Hydrate batches, students and EMI plans from MongoDB as soon as the user
+  // is authenticated so dashboards show persisted data across sessions.
   useEffect(() => {
     if (isAuthenticated) {
       void loadBatches();
+      void loadStudents();
+      void loadEmis();
     }
-  }, [isAuthenticated, loadBatches]);
+  }, [isAuthenticated, loadBatches, loadStudents, loadEmis]);
 
   useEffect(() => {
     if (!isAuthenticated) {

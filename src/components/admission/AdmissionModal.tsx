@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { User as UserType, StudentStatus } from '@/types';
 import { COURSE_DATABASE, findCourseDetails, getSoftwaresForCourse } from '@/lib/softwareData';
+import PhoneVerifyButton from '@/components/students/PhoneVerifyButton';
 
 interface AdmissionModalProps {
   isOpen: boolean;
@@ -74,6 +75,10 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
     remarks: 'Candidate registered through Counselor Desk. Ready for Academic Manager batch scheduling.',
     waitingForModule: 'Module 1: Fundamentals & Foundation'
   }));
+
+  // Optional WhatsApp OTP verification for the student and parent numbers.
+  // Verification never blocks the admission — it only records confidence.
+  const [verifiedNumbers, setVerifiedNumbers] = useState({ contact: false, parent: false });
 
   const handleDocToggle = (docId: string) => {
     setFormData(prev => {
@@ -269,13 +274,24 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Input
-                      label="Student Contact No. *"
-                      placeholder="+91 98765 00000"
-                      value={formData.contactNo}
-                      onChange={(e) => setFormData({ ...formData, contactNo: e.target.value })}
-                      required
-                    />
+                    <div>
+                      <Input
+                        label="Student Contact No. *"
+                        placeholder="+91 98765 00000"
+                        value={formData.contactNo}
+                        onChange={(e) => setFormData({ ...formData, contactNo: e.target.value })}
+                        required
+                      />
+                      <div className="mt-1.5">
+                        <PhoneVerifyButton
+                          phone={formData.contactNo}
+                          role="student"
+                          studentId={formData.studentId}
+                          verified={verifiedNumbers.contact}
+                          onVerified={() => setVerifiedNumbers((v) => ({ ...v, contact: true }))}
+                        />
+                      </div>
+                    </div>
                     <Input
                       label="Student Email ID *"
                       type="email"
@@ -300,12 +316,23 @@ export default function AdmissionModal({ isOpen, onClose, initialLead }: Admissi
                       value={formData.parentName}
                       onChange={(e) => setFormData({ ...formData, parentName: e.target.value })}
                     />
-                    <Input
-                      label="Parent Contact Number"
-                      placeholder="+91 98765 00001"
-                      value={formData.parentContact}
-                      onChange={(e) => setFormData({ ...formData, parentContact: e.target.value })}
-                    />
+                    <div>
+                      <Input
+                        label="Parent Contact Number"
+                        placeholder="+91 98765 00001"
+                        value={formData.parentContact}
+                        onChange={(e) => setFormData({ ...formData, parentContact: e.target.value })}
+                      />
+                      <div className="mt-1.5">
+                        <PhoneVerifyButton
+                          phone={formData.parentContact}
+                          role="parent"
+                          studentId={formData.studentId}
+                          verified={verifiedNumbers.parent}
+                          onVerified={() => setVerifiedNumbers((v) => ({ ...v, parent: true }))}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               )}

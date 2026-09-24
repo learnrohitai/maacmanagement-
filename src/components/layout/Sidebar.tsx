@@ -31,7 +31,8 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, roles: ['admin', 'teacher', 'academic-manager', 'counselor'] },
+  { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard className="w-5 h-5" />, roles: ['admin', 'teacher', 'academic-manager', 'counselor', 'account-manager'] },
+  { label: 'EMI / Fee Installments', href: '/dashboard/account-manager', icon: <CreditCard className="w-5 h-5" />, roles: ['account-manager', 'admin'] },
   { label: 'Create Admission', href: '/admission/new', icon: <UserPlus className="w-5 h-5" />, roles: ['admin', 'counselor'] },
   { label: 'Monthly Report', href: '/monthly-report', icon: <FileBarChart className="w-5 h-5" />, roles: ['admin', 'counselor'] },
   { label: 'Inquiries & Leads', href: '/inquiries', icon: <UserCheck className="w-5 h-5" />, roles: ['admin'] },
@@ -41,7 +42,7 @@ const navItems: NavItem[] = [
   { label: 'Attendance', href: '/attendance', icon: <ClipboardList className="w-5 h-5" />, roles: ['admin'] },
   { label: 'Course Progress', href: '/course-progress', icon: <TrendingUp className="w-5 h-5" />, roles: ['admin', 'academic-manager'] },
   { label: 'Lesson Plans', href: '/lesson-plans', icon: <Calendar className="w-5 h-5" />, roles: ['admin'] },
-  { label: 'Finance', href: '/finance', icon: <CreditCard className="w-5 h-5" />, roles: ['admin'] },
+  { label: 'Finance', href: '/finance', icon: <CreditCard className="w-5 h-5" />, roles: ['admin', 'account-manager'] },
   { label: 'Settings', href: '/settings', icon: <Settings className="w-5 h-5" />, roles: ['admin', 'teacher', 'academic-manager', 'counselor'] },
 ];
 

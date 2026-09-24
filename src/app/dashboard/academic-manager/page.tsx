@@ -32,11 +32,18 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { User as UserType, Batch } from '@/types';
 import { COURSE_DATABASE, findSoftwareDetails, calculateStudentCourseProgress, calculateBatchTracker, calculateCourseTracker, StudentCourseProgressReport } from '@/lib/softwareData';
 import StudentCurriculumModal from '@/components/curriculum/StudentCurriculumModal';
+import FeeStatusBadge from '@/components/fees/FeeStatusBadge';
+import { useEffect } from 'react';
 
 type ScheduleView = 'day-mwf' | 'day-tts' | 'teacher';
 
 export default function AcademicManagerDashboard() {
-  const { batches, users, attendance, assignBatchToStudent, changeStudentBatch, students: storeStudents } = useStore();
+  const { batches, users, attendance, emis, loadEmis, assignBatchToStudent, changeStudentBatch, students: storeStudents } = useStore();
+
+  // EMI plans power the fee status badges (no-op after first load)
+  useEffect(() => {
+    void loadEmis();
+  }, [loadEmis]);
 
   // Modals state
   const [selectedStudentForBatch, setSelectedStudentForBatch] = useState<string | null>(null);
@@ -1030,6 +1037,7 @@ export default function AcademicManagerDashboard() {
                       <td className="py-3.5 px-4">
                         <div className="font-bold text-gray-900">{student.name}</div>
                         <div className="text-xs font-mono text-emerald-700">{student.studentId || 'MAAC-STU'}</div>
+                        <FeeStatusBadge studentId={student.id} emis={emis} fallbackStudent={student} />
                       </td>
                       <td className="py-3.5 px-4 font-medium text-gray-800">{student.course || 'Animation'}</td>
                       <td className="py-3.5 px-4">
@@ -1419,6 +1427,7 @@ export default function AcademicManagerDashboard() {
                           {s.parentContact && (
                             <div className="text-xs text-gray-400 mt-0.5">Parent: {s.parentContact}</div>
                           )}
+                          <FeeStatusBadge studentId={s.id} emis={emis} fallbackStudent={s} />
                         </td>
                         <td className="py-2.5 px-3 text-xs font-mono text-emerald-700">{s.studentId || 'MAAC-STU'}</td>
                         <td className="py-2.5 px-3 text-xs font-semibold text-purple-700 bg-purple-50 rounded-md inline-block mt-1">

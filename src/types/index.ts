@@ -191,6 +191,25 @@ export interface FeeRecord {
   transactionId?: string;
 }
 
+/** Per-student EMI (monthly installment) record derived from course duration. */
+export interface EmiRecord {
+  id: string;
+  studentId: string;
+  studentCode: string;
+  studentName: string;
+  course: string;
+  totalFees: number;
+  months: number;
+  installmentNo: number;
+  amount: number;
+  dueDate: string;
+  status: 'paid' | 'unpaid';
+  paidAmount: number;
+  paidDate: string | null;
+  paymentMethod: string;
+  remarks: string;
+}
+
 export interface DashboardStats {
   totalStudents: number;
   totalTeachers: number;

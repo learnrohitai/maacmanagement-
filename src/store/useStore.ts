@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import { User, UserRole, Batch, Attendance, LessonPlan, StudentProgress, FeeRecord, DashboardStats, InquiryLead } from '@/types';
+import { User, UserRole, Batch, Attendance, LessonPlan, StudentProgress, FeeRecord, DashboardStats, InquiryLead, EmiRecord } from '@/types';
 import { mockUsers, mockBatches, mockAttendance, mockLessonPlans, mockStudentProgress, mockFeeRecords, mockDashboardStats, mockInquiries } from '@/lib/mockData';
 
 interface AppState {
@@ -26,6 +26,18 @@ interface AppState {
   // DB sync
   batchesLoadedFromDb: boolean;
   loadBatches: () => Promise<void>;
+  studentsLoadedFromDb: boolean;
+  loadStudents: () => Promise<void>;
+
+  // EMI schedule (monthly installments derived from course duration)
+  emis: EmiRecord[];
+  emisLoadedFromDb: boolean;
+  loadEmis: () => Promise<void>;
+  markEmiPaid: (
+    emiId: string,
+    paid: boolean,
+    opts?: { paidDate?: string; paymentMethod?: string; remarks?: string }
+  ) => Promise<void>;
 
   // Attendance lock: keys are `${batchId}|${date}`. Once submitted, attendance is
   // locked — only the academic-manager role may re-adjust it.
@@ -134,6 +146,56 @@ export const useStore = create<AppState>((set, get) => ({
   users: mockUsers,
   students: mockUsers.filter(u => u.role === 'student'),
   batches: mockBatches,
+  studentsLoadedFromDb: false,
+  loadStudents: async () => {
+    if (get().studentsLoadedFromDb) return;
+    try {
+      const res = await fetch('/api/students');
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        students?: Array<Record<string, unknown> & { id?: string }>;
+      };
+      const dbStudents: User[] = (data.students || []).map((s) => ({
+        id: String(s.id ?? ''),
+        name: String(s.fullName ?? ''),
+        email: String(s.email ?? ''),
+        role: 'student' as const,
+        phone: String(s.contactNo ?? ''),
+        joinDate: String(s.admissionDate ?? ''),
+        isActive: String(s.studentStatus ?? '') === 'Active',
+        studentId: String(s.studentCode ?? ''),
+        parentName: String(s.parentName ?? ''),
+        parentContact: String(s.parentContact ?? ''),
+        dob: String(s.dob ?? ''),
+        course: String(s.course ?? ''),
+        admissionDate: String(s.admissionDate ?? ''),
+        counselorName: String(s.counselorName ?? ''),
+        counselorId: '',
+        assignedBatches: Array.isArray(s.assignedBatches)
+          ? (s.assignedBatches as unknown[]).map((b) => String(b))
+          : [],
+        feesDueDate: String(s.feesDueDate ?? ''),
+        totalFees: Number(s.totalFees ?? 0),
+        feesPaid: Number(s.feesPaid ?? 0),
+        paymentStatus: (String(s.paymentStatus ?? 'Pending') as User['paymentStatus']),
+        studentStatus: (String(s.studentStatus ?? 'Active') as User['studentStatus']),
+        remarks: String(s.remarks ?? ''),
+      }));
+      const dbIds = new Set(dbStudents.map((s) => s.id));
+      // Keep locally-created (mock/session) students that aren't in the DB yet.
+      const localOnly = mockUsers.filter(
+        (u) => u.role === 'student' && !dbIds.has(u.id)
+      );
+      set({
+        users: [...dbStudents, ...mockUsers.filter((u) => u.role !== 'student')],
+        students: [...dbStudents, ...localOnly],
+        studentsLoadedFromDb: true,
+      });
+    } catch {
+      // DB unreachable — keep working with mock data
+    }
+  },
+
   attendance: mockAttendance,
   lessonPlans: mockLessonPlans,
   studentProgress: mockStudentProgress,
@@ -165,6 +227,56 @@ export const useStore = create<AppState>((set, get) => ({
       set({ batches: [...dbBatches, ...localOnly], batchesLoadedFromDb: true });
     } catch {
       // DB unreachable — keep working with mock data
+    }
+  },
+
+  // EMI schedule — loaded once per session from /api/emi
+  emis: [],
+  emisLoadedFromDb: false,
+  loadEmis: async () => {
+    if (get().emisLoadedFromDb) return;
+    try {
+      const res = await fetch('/api/emi');
+      if (!res.ok) return;
+      const data = (await res.json()) as { emis?: EmiRecord[] };
+      set({ emis: data.emis || [], emisLoadedFromDb: true });
+    } catch {
+      // DB unreachable — panels fall back to student-master payment status
+    }
+  },
+
+  markEmiPaid: async (emiId, paid, opts) => {
+    // Optimistic local update; server syncs the student fee status.
+    const prev = get().emis;
+    set({
+      emis: prev.map((e) =>
+        e.id === emiId
+          ? {
+              ...e,
+              status: paid ? ('paid' as const) : ('unpaid' as const),
+              paidAmount: paid ? e.amount : 0,
+              paidDate: paid ? opts?.paidDate || new Date().toISOString().slice(0, 10) : null,
+              paymentMethod: paid ? opts?.paymentMethod || 'Cash' : '',
+              remarks: opts?.remarks ?? e.remarks,
+            }
+          : e
+      ),
+    });
+    try {
+      const res = await fetch(`/api/emi?id=${encodeURIComponent(emiId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: paid ? 'paid' : 'unpaid',
+          paidDate: opts?.paidDate,
+          paymentMethod: opts?.paymentMethod,
+          remarks: opts?.remarks,
+        }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+    } catch {
+      // Roll back on failure so the UI never lies about money
+      set({ emis: prev });
     }
   },
 

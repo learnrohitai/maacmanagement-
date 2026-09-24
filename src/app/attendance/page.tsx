@@ -18,6 +18,7 @@ import Input, { Select } from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Table';
 import { CloudUpload, CheckCircle2, AlertTriangle, Loader2, Lock } from 'lucide-react';
+import FeeStatusBadge from '@/components/fees/FeeStatusBadge';
 import {
   Calendar,
   CheckCircle,
@@ -35,7 +36,7 @@ import {
 } from 'lucide-react';
 
 function AttendanceContent() {
-  const { currentUser, attendance, batches, users, addAttendance, updateAttendance, submittedAttendanceKeys, markAttendanceSubmitted } = useStore();
+  const { currentUser, attendance, batches, users, emis, loadEmis, addAttendance, updateAttendance, submittedAttendanceKeys, markAttendanceSubmitted } = useStore();
   const searchParams = useSearchParams();
   const preselectedBatchId = searchParams.get('batch') || '';
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -46,6 +47,12 @@ function AttendanceContent() {
   const [studentAssignments, setStudentAssignments] = useState<Record<string, boolean>>({});
   const [studentGrades, setStudentGrades] = useState<Record<string, string>>({});
   const [isSyllabusModalOpen, setIsSyllabusModalOpen] = useState(false);
+
+  // EMI plans for the fee status badges (no-op after first load)
+  useEffect(() => {
+    void loadEmis();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const students = users.filter(u => u.role === 'student');
 
@@ -655,16 +662,16 @@ function AttendanceContent() {
                           </Badge>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500">{index + 1}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-white text-sm font-bold">
-                              {student.name.charAt(0)}
+                        <td className="px-6 py-4 whitespace-nowrap">                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center text-white text-sm font-bold">
+                                {student.name.charAt(0)}
+                              </div>
+                              <div>
+                                <p className="font-medium text-gray-900">{student.name}</p>
+                                <p className="text-xs text-gray-400">{student.phone || 'No phone'}</p>
+                                <FeeStatusBadge studentId={student.id} emis={emis} fallbackStudent={student} />
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium text-gray-900">{student.name}</p>
-                              <p className="text-xs text-gray-400">{student.phone || 'No phone'}</p>
-                            </div>
-                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{student.email}</td>
                         {currentUser?.role === 'teacher' && (

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/mongodb';
 import AttendanceModel from '@/models/Attendance';
+import { processAbsenceAlerts } from '@/lib/absenceAlerts';
 
 // GET /api/attendance?batchId=...&date=YYYY-MM-DD
 export async function GET(request: NextRequest) {
@@ -86,6 +87,19 @@ export async function POST(request: NextRequest) {
       batchId: docs[0].batchId,
       date: docs[0].date,
     }).lean();
+
+    // Fire-and-forget: alert parents via WhatsApp (WATI) when a student hits
+    // 2+ consecutive absent days. Never blocks or breaks the save.
+    void processAbsenceAlerts(
+      saved.map((s) => ({
+        studentId: String(s.studentId ?? ''),
+        studentName: String(s.studentName ?? ''),
+        batchId: String(s.batchId ?? ''),
+        batchName: String((s as { batchName?: string }).batchName ?? ''),
+        date: String(s.date ?? ''),
+        status: String(s.status ?? ''),
+      }))
+    ).catch(() => undefined);
 
     return NextResponse.json({
       upserted: result.upsertedCount ?? 0,

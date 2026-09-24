@@ -1,16 +1,18 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Table';
+import ImportCsvModal from '@/components/students/ImportCsvModal';
 import {
   Plus,
   Search,
+  Upload,
   GraduationCap,
   Mail,
   Phone,
@@ -47,6 +49,20 @@ export default function StudentsPage() {
   } | null>(null);
   const [transferTargetBatchId, setTransferTargetBatchId] = useState<string>('');
   const [transferReason, setTransferReason] = useState<string>('Timing & Schedule Shift Request');
+
+  // CSV bulk import
+  const [showImportCsv, setShowImportCsv] = useState(false);
+
+  // Pull the Student Master DB records into the store on first load
+  useEffect(() => {
+    void useStoreHook.getState().loadStudents();
+  }, []);
+
+  const reloadStudentsFromDb = () => {
+    // Bump the store's load guard so the next render refetches /api/students
+    useStoreHook.setState({ studentsLoadedFromDb: false });
+    void useStoreHook.getState().loadStudents();
+  };
 
   const filteredStudents = students.filter(student => {
     const matchesSearch =
@@ -112,15 +128,32 @@ export default function StudentsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Student Master Database</h1>
           <p className="text-gray-500 mt-1">Complete institute student records, statuses, fee schedules, and batch allocations</p>
         </div>
-        <Button
-          onClick={() => router.push('/admission/new')}
-          variant="success"
-          className="shadow-lg shadow-emerald-600/20 font-bold"
-        >
-          <GraduationCap className="w-5 h-5 mr-2" />
-          Create Admission
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setShowImportCsv(true)}
+            variant="secondary"
+            className="font-bold"
+          >
+            <Upload className="w-5 h-5 mr-2" />
+            Import CSV
+          </Button>
+          <Button
+            onClick={() => router.push('/admission/new')}
+            variant="success"
+            className="shadow-lg shadow-emerald-600/20 font-bold"
+          >
+            <GraduationCap className="w-5 h-5 mr-2" />
+            Create Admission
+          </Button>
+        </div>
       </motion.div>
+
+      {/* CSV Import Modal */}
+      <ImportCsvModal
+        isOpen={showImportCsv}
+        onClose={() => setShowImportCsv(false)}
+        onImported={reloadStudentsFromDb}
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
